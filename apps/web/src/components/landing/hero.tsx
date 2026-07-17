@@ -8,6 +8,10 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(59,130,246,0.08),transparent_70%)]"
+        aria-hidden="true"
+      />
+      <div
         className="pointer-events-none absolute inset-0 grid-bg opacity-70 [mask-image:radial-gradient(ellipse_70%_55%_at_50%_0%,black,transparent)] [-webkit-mask-image:radial-gradient(ellipse_70%_55%_at_50%_0%,black,transparent)]"
         aria-hidden="true"
       />

@@ -1,4 +1,5 @@
 import { CodeBlock } from "@/components/ui/code-block";
+import { InlineCode } from "@/components/ui/inline-code";
 import { Reveal } from "@/components/landing/reveal";
 
 const quickstart = `import { createSession } from "@prince/computer-use-sdk";
@@ -26,11 +27,10 @@ export function WhySection() {
             carries the providers you actually drive. The core stays tiny.
           </p>
           <p>
-            One action vocabulary, <span className="font-mono text-fg">goto</span>,{" "}
-            <span className="font-mono text-fg">click</span>,{" "}
-            <span className="font-mono text-fg">type</span>,{" "}
-            <span className="font-mono text-fg">screenshot</span>, and{" "}
-            <span className="font-mono text-fg">agent</span>, maps to each
+            One action vocabulary, <InlineCode>goto</InlineCode>,{" "}
+            <InlineCode>click</InlineCode>, <InlineCode>type</InlineCode>,{" "}
+            <InlineCode>screenshot</InlineCode>, and{" "}
+            <InlineCode>agent</InlineCode>, maps to each
             provider&apos;s native calls. Swap one import, keep the same code.
           </p>
           <p>

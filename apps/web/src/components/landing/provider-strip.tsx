@@ -12,7 +12,7 @@ export function ProviderStrip() {
               key={p.name}
               letters={p.monogram}
               title={p.name}
-              className="h-6 w-6 text-muted opacity-60 transition-opacity duration-200 hover:opacity-100"
+              className="h-6 w-6 text-fg opacity-50 transition-opacity duration-200 hover:opacity-100"
             />
           ))}
         </Reveal>

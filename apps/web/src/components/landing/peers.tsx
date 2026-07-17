@@ -1,6 +1,7 @@
 import { peers } from "@/lib/providers";
 import { site } from "@/lib/site";
 import { Reveal } from "@/components/landing/reveal";
+import { CopyButton } from "@/components/ui/copy-button";
 
 export function Peers() {
   return (
@@ -26,9 +27,11 @@ export function Peers() {
           </span>
         ))}
       </Reveal>
-      <p className="mt-8 font-mono text-sm text-muted">
-        {site.install}
-      </p>
+      <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-edge bg-bg px-4 py-2.5 font-mono text-sm">
+        <span className="text-muted">$</span>
+        <span className="text-fg">{site.install}</span>
+        <CopyButton value={site.install} className="text-muted hover:text-fg" />
+      </div>
     </section>
   );
 }

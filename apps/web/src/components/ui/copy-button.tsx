@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy } from "@phosphor-icons/react";
+import { Check, Copy } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 
 export function CopyButton({

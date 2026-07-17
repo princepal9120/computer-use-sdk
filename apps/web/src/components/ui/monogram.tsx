@@ -13,9 +13,8 @@ export function Monogram({
     <svg
       viewBox="0 0 40 40"
       className={cn("h-7 w-7", className)}
-      aria-hidden="true"
       role="img"
-      {...(title ? { "aria-label": title } : {})}
+      {...(title ? { "aria-label": title } : { "aria-hidden": "true" })}
     >
       <rect width="40" height="40" rx="10" fill="currentColor" />
       <text

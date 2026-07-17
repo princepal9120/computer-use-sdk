@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ArrowUpRight, CaretDown, List } from "@phosphor-icons/react";
+import { ArrowUpRight, CaretDown, List } from "@/components/ui/icons";
 import { docsNav } from "@/lib/docs-nav";
 import { cn } from "@/lib/cn";
 

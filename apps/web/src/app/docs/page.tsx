@@ -33,7 +33,7 @@ const cloud = matrix.filter((r) => r.group === "cloud");
 const oss = matrix.filter((r) => r.group === "oss");
 const transports = matrix.filter((r) => r.group === "transport");
 
-function Cap({ cap }: { cap: Cap }) {
+function CapCell({ cap }: { cap: Cap }) {
   if (cap === "yes")
     return <span className="text-accent-600 dark:text-accent-400">Yes</span>;
   if (cap === "partial")
@@ -204,10 +204,10 @@ export default function DocsPage() {
         rows={cloud}
         rowCells={(r) => (
           <>
-            <td className="px-4 py-3"><Cap cap={r.browser} /></td>
-            <td className="px-4 py-3"><Cap cap={r.desktop} /></td>
-            <td className="px-4 py-3"><Cap cap={r.api} /></td>
-            <td className="px-4 py-3"><Cap cap={r.vision} /></td>
+            <td className="px-4 py-3"><CapCell cap={r.browser} /></td>
+            <td className="px-4 py-3"><CapCell cap={r.desktop} /></td>
+            <td className="px-4 py-3"><CapCell cap={r.api} /></td>
+            <td className="px-4 py-3"><CapCell cap={r.vision} /></td>
           </>
         )}
       />
@@ -218,10 +218,10 @@ export default function DocsPage() {
         rows={oss}
         rowCells={(r) => (
           <>
-            <td className="px-4 py-3"><Cap cap={r.oss} /></td>
-            <td className="px-4 py-3"><Cap cap={r.browser} /></td>
-            <td className="px-4 py-3"><Cap cap={r.desktop} /></td>
-            <td className="px-4 py-3"><Cap cap={r.vision} /></td>
+            <td className="px-4 py-3"><CapCell cap={r.oss} /></td>
+            <td className="px-4 py-3"><CapCell cap={r.browser} /></td>
+            <td className="px-4 py-3"><CapCell cap={r.desktop} /></td>
+            <td className="px-4 py-3"><CapCell cap={r.vision} /></td>
           </>
         )}
       />
@@ -247,9 +247,9 @@ export default function DocsPage() {
             {transports.map((r) => (
               <tr key={r.name} className="border-b border-edge/60 last:border-0">
                 <td className="px-4 py-3 font-medium text-fg">{r.name}</td>
-                <td className="px-4 py-3"><Cap cap={r.browser} /></td>
-                <td className="px-4 py-3"><Cap cap={r.desktop} /></td>
-                <td className="px-4 py-3"><Cap cap={r.vision} /></td>
+                <td className="px-4 py-3"><CapCell cap={r.browser} /></td>
+                <td className="px-4 py-3"><CapCell cap={r.desktop} /></td>
+                <td className="px-4 py-3"><CapCell cap={r.vision} /></td>
                 <td className="px-4 py-3">
                   <code className="rounded-md border border-edge bg-bg px-1.5 py-0.5 font-mono text-[11px] text-muted">
                     {r.pkg.replace("@prince/computer-use-sdk", ".../")}

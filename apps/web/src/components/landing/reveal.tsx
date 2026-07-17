@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, useReducedMotion, type HTMLMotionProps } from "motion/react";
-import { cn } from "@/lib/cn";
 
 type RevealProps = HTMLMotionProps<"div"> & {
   delay?: number;

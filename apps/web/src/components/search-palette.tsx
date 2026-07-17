@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { ArrowRight, MagnifyingGlass, X } from "@/components/ui/icons";
 import { flatNav } from "@/lib/docs-nav";
 
 export function SearchPalette() {

@@ -10,7 +10,7 @@ export function buttonVariants(opts?: { variant?: Variant; size?: Size }) {
     "inline-flex items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap transition-all active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 disabled:pointer-events-none disabled:opacity-50";
   const variants: Record<Variant, string> = {
     primary: "bg-fg text-bg hover:opacity-90",
-    accent: "bg-accent-500 text-[#051b12] hover:bg-accent-400",
+    accent: "bg-accent-500 text-white hover:bg-accent-400",
     outline: "border border-edge text-fg hover:bg-bg",
     ghost: "text-fg hover:bg-bg",
   };
