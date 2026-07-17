@@ -1,7 +1,9 @@
 import { chromium, type Browser, type Page } from "playwright";
-import { ComputerUseError, unsupported } from "../../core/errors";
+import { PlaywrightComputer } from "../../core/engine";
+import { unsupported } from "../../core/errors";
 import type { ComputerProvider, ComputerRuntime } from "../../core/provider";
 import type { Display, ToolAction, ToolResult } from "../../core/types";
+import { runPlaywrightAction } from "../../internal/cdp-runtime";
 import { loadOptionalPeer, requireEnv } from "../../internal/provider-utils";
 import { agentqlCapabilities } from "../capabilities";
 
@@ -15,6 +17,7 @@ export { agentqlCapabilities };
 
 /**
  * AgentQL — DOM AI queries for web apps. Peer: `agentql`. Env: `AGENTQL_API_KEY`.
+ * Full computer + browse actions via Playwright; `extract` / NL click via AgentQL.
  */
 export function agentql(options: AgentQLOptions = {}): ComputerProvider {
   return {
@@ -50,56 +53,57 @@ export function agentql(options: AgentQLOptions = {}): ComputerProvider {
       });
       const page = await context.newPage();
       const aql = await wrap(page);
+      const computer = PlaywrightComputer.attach(browser, page, display, true);
 
       const runtime: ComputerRuntime = {
         id: `agentql-${crypto.randomUUID().slice(0, 8)}`,
-        raw: { page, aql },
+        raw: { page, aql, computer },
         capabilities: agentqlCapabilities,
         display,
         async execute(action: ToolAction): Promise<ToolResult> {
           switch (action.type) {
-            case "goto":
-              await page.goto(action.url, { waitUntil: "domcontentloaded" });
-              return { type: "text", text: `Navigated to ${action.url}` };
             case "extract": {
               if (action.url) await page.goto(action.url, { waitUntil: "domcontentloaded" });
-              const data = await aql.queryData(action.query);
-              return { type: "json", data };
+              try {
+                const data = await aql.queryData(action.query);
+                return { type: "json", data };
+              } catch {
+                return computer.extract(action.query);
+              }
             }
             case "click": {
-              if (action.selector) {
-                await page.click(action.selector);
-                return { type: "text", text: `Clicked ${action.selector}` };
+              if (action.selector || action.coordinate) {
+                return computer.clickTarget(action);
               }
               // Natural language via queryElements
-              const els = await aql.queryElements(action.text ?? "primary button");
-              const handle = Array.isArray(els) ? els[0] : els;
-              if (handle && typeof (handle as { click?: () => Promise<void> }).click === "function") {
-                await (handle as { click: () => Promise<void> }).click();
-                return { type: "text", text: "Clicked via AgentQL" };
+              try {
+                const els = await aql.queryElements(action.text ?? "primary button");
+                const handle = Array.isArray(els) ? els[0] : els;
+                if (
+                  handle
+                  && typeof (handle as { click?: () => Promise<void> }).click === "function"
+                ) {
+                  await (handle as { click: () => Promise<void> }).click();
+                  return { type: "text", text: "Clicked via AgentQL" };
+                }
+              } catch {
+                // fall through
               }
+              if (action.text) return computer.clickTarget(action);
               return unsupported("agentql", "click");
             }
             case "type":
               if (action.selector) {
-                await page.fill(action.selector, action.text);
-                return { type: "text", text: `Typed into ${action.selector}` };
+                return computer.typeText(action.text, action.selector);
               }
-              return unsupported("agentql", "type without selector");
-            case "wait":
-              if (action.selector) await page.waitForSelector(action.selector);
-              else await page.waitForTimeout(action.ms ?? 1000);
-              return { type: "text", text: "Waited" };
+              return computer.typeText(action.text);
             default:
-              return unsupported("agentql", action.type);
+              return runPlaywrightAction(computer, "agentql", action);
           }
         },
-        async screenshot() {
-          const buf = await page.screenshot({ type: "png" });
-          return buf.toString("base64");
-        },
+        screenshot: () => computer.screenshot(),
         async stop() {
-          await browser.close();
+          await computer.stop();
         },
       };
       return runtime;
@@ -111,5 +115,3 @@ interface AgentQLPage {
   queryData: (query: string) => Promise<unknown>;
   queryElements: (query: string) => Promise<unknown>;
 }
-
-void ComputerUseError;

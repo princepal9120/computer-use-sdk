@@ -7,153 +7,130 @@ import {
   PlugsConnected,
 } from "@/components/ui/icons";
 import { Reveal } from "@/components/landing/reveal";
-import { Monogram } from "@/components/ui/monogram";
+import { BrandLogo } from "@/components/ui/brand-logo";
 import { stripProviders } from "@/lib/providers";
 import { cn } from "@/lib/cn";
 
 const actions = ["goto", "click", "type", "screenshot", "agent"];
 
-function IconBadge({ children }: { children: React.ReactNode }) {
+function IconBadge({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-accent-500/10 text-accent-600 dark:text-accent-400">
+    <span
+      className={cn(
+        "inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-accent-500/10 text-accent-600 dark:text-accent-400",
+        className
+      )}
+    >
       {children}
     </span>
   );
 }
 
-function MonogramGrid() {
+function AdapterGrid() {
   return (
-    <div className="mt-auto grid grid-cols-6 gap-2 pt-6">
+    <ul
+      className="mt-auto grid w-full grid-cols-4 gap-2 pt-8 sm:grid-cols-4 md:grid-cols-8 lg:grid-cols-4"
+      aria-label="Supported provider adapters"
+    >
       {stripProviders.map((p) => (
-        <Monogram
-          key={p.name}
-          letters={p.monogram}
-          title={p.name}
-          className="h-7 w-7 opacity-70"
-        />
+        <li key={p.name} className="min-w-0">
+          <div
+            className="group flex h-full flex-col items-center justify-center gap-1.5 rounded-xl border border-edge/80 bg-bg/60 px-1.5 py-3 transition-colors hover:border-edge hover:bg-bg"
+            title={p.name}
+          >
+            <BrandLogo
+              domain={p.domain}
+              monogram={p.monogram}
+              title={p.name}
+              className="h-8 w-8 opacity-90 transition-opacity group-hover:opacity-100 sm:h-9 sm:w-9"
+            />
+            <span className="w-full truncate text-center text-[10px] font-medium leading-tight text-muted group-hover:text-fg">
+              {p.name}
+            </span>
+          </div>
+        </li>
       ))}
-    </div>
-  );
-}
-
-function ScreenshotFrame() {
-  return (
-    <div className="mt-auto flex items-center gap-3 rounded-lg border border-edge bg-bg p-3">
-      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-accent-500/10 text-accent-600 dark:text-accent-400">
-        <Browser size={16} weight="duotone" />
-      </span>
-      <div className="h-2 flex-1 overflow-hidden rounded-full bg-edge">
-        <span className="block h-full w-2/3 rounded-full bg-accent-500/60" />
-      </div>
-      <span className="font-mono text-[11px] text-muted">1280×800</span>
-    </div>
-  );
-}
-
-function ScanGlyph() {
-  return (
-    <div className="mt-auto flex items-center gap-3 rounded-lg border border-edge bg-bg p-3">
-      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-accent-500/10 text-accent-600 dark:text-accent-400">
-        <Eye size={16} weight="duotone" />
-      </span>
-      <div className="grid flex-1 grid-cols-3 gap-1.5">
-        <span className="h-2 rounded-full bg-accent-500/50" />
-        <span className="h-2 rounded-full bg-accent-500/30" />
-        <span className="h-2 rounded-full bg-accent-500/20" />
-      </div>
-    </div>
-  );
-}
-
-function ActionPills() {
-  return (
-    <div className="mt-auto flex flex-wrap gap-1.5 pt-6">
-      {actions.map((a) => (
-        <span
-          key={a}
-          className="rounded-md border border-edge bg-bg px-2.5 py-1 font-mono text-[11px] text-fg/80"
-        >
-          {a}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function ContentLines() {
-  return (
-    <div className="mt-auto space-y-1.5 rounded-lg border border-edge bg-bg p-3">
-      {[90, 70, 80, 45].map((w, i) => (
-        <span
-          key={i}
-          className="block h-1.5 rounded-full bg-edge"
-          style={{ width: `${w}%` }}
-        />
-      ))}
-    </div>
-  );
-}
-
-function WindowsGlyph() {
-  return (
-    <div className="mt-auto flex items-center gap-2 rounded-lg border border-edge bg-bg p-3">
-      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-accent-500/10 text-accent-600 dark:text-accent-400">
-        <Desktop size={16} weight="duotone" />
-      </span>
-      <span className="font-mono text-[11px] text-muted">browser + desktop</span>
-    </div>
+    </ul>
   );
 }
 
 export function FeatureBento() {
   return (
-    <section className="mx-auto max-w-[1400px] px-5 py-24 sm:px-8">
+    <section className="mx-auto max-w-[1400px] px-5 py-20 sm:px-8 sm:py-24">
       <div className="max-w-2xl">
         <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Everything behind one session
         </h2>
-        <p className="mt-3 text-muted">
-          Local browsers, cloud agents, desktop sandboxes, vision, and scrape,
-          behind one createSession.
+        <p className="mt-4 max-w-[52ch] text-muted">
+          Local browsers, cloud agents, desktop sandboxes, vision, and scrape
+          share the same createSession surface.
         </p>
       </div>
 
-      <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:auto-rows-fr lg:grid-cols-3">
-        <Reveal className="flex flex-col rounded-2xl border border-edge bg-accent-500/[0.04] p-6 sm:col-span-2 sm:p-8 lg:col-span-2 lg:row-span-2">
+      <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:auto-rows-fr lg:grid-cols-3 lg:gap-4">
+        {/* Hero tile: adapters - tinted, spans 2x2 */}
+        <Reveal className="flex min-h-[300px] flex-col rounded-2xl border border-edge bg-accent-500/[0.06] p-6 sm:col-span-2 sm:p-8 lg:col-span-2 lg:row-span-2 dark:bg-accent-500/[0.07]">
           <IconBadge>
             <PlugsConnected size={18} weight="duotone" />
           </IconBadge>
           <h3 className="mt-4 text-lg font-semibold">Adapters</h3>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
-            Plug any provider in, swap one import. Each adapter is its own entry
-            point, so your bundle only carries the providers you drive.
+            Plug any provider in, swap one import. Each adapter is a separate
+            entry point so unused drivers stay out of the bundle.
           </p>
-          <MonogramGrid />
+          <AdapterGrid />
         </Reveal>
 
-        <Reveal delay={0.06} className="flex flex-col rounded-2xl border border-edge bg-surface p-6">
+        {/* Local - mono surface */}
+        <Reveal
+          delay={0.05}
+          className="flex flex-col rounded-2xl border border-edge bg-surface p-6"
+        >
           <IconBadge>
             <Browser size={18} weight="duotone" />
           </IconBadge>
           <h3 className="mt-4 text-lg font-semibold">Local</h3>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Zero-install local browser. Bundled Playwright, no extra deps.
+            Bundled Playwright. First session runs with zero extra installs.
           </p>
-          <ScreenshotFrame />
+          <div className="mt-auto pt-6 font-mono text-[11px] leading-relaxed text-muted">
+            <div className="rounded-xl border border-edge bg-bg px-3 py-2.5">
+              <span className="text-accent-600 dark:text-accent-400">import</span>{" "}
+              {"{ local }"}
+              <br />
+              <span className="text-fg/70">provider: local()</span>
+            </div>
+          </div>
         </Reveal>
 
-        <Reveal delay={0.12} className="flex flex-col rounded-2xl border border-edge bg-surface p-6">
+        {/* Vision - darker tint */}
+        <Reveal
+          delay={0.1}
+          className="flex flex-col rounded-2xl border border-edge bg-fg/[0.03] p-6 dark:bg-fg/[0.04]"
+        >
           <IconBadge>
             <Eye size={18} weight="duotone" />
           </IconBadge>
           <h3 className="mt-4 text-lg font-semibold">Vision</h3>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            See the screen. Screenshot feeds vision-driven agents.
+            Screenshots feed vision agents. Same session, same run call.
           </p>
-          <ScanGlyph />
+          <p className="mt-auto pt-6 font-mono text-xs text-accent-600 dark:text-accent-400">
+            session.screenshot()
+          </p>
         </Reveal>
 
-        <Reveal delay={0.18} className="flex flex-col rounded-2xl border border-edge bg-surface p-6">
+        {/* Vocabulary - accent wash */}
+        <Reveal
+          delay={0.12}
+          className="flex flex-col rounded-2xl border border-edge bg-surface p-6"
+        >
           <IconBadge>
             <Cursor size={18} weight="duotone" />
           </IconBadge>
@@ -161,25 +138,39 @@ export function FeatureBento() {
           <p className="mt-2 text-sm leading-relaxed text-muted">
             Five actions map to every provider&apos;s native calls.
           </p>
-          <ActionPills />
+          <div className="mt-auto flex flex-wrap gap-1.5 pt-6">
+            {actions.map((a) => (
+              <span
+                key={a}
+                className="rounded-[10px] border border-edge bg-bg px-2.5 py-1 font-mono text-[11px] text-fg/85"
+              >
+                {a}
+              </span>
+            ))}
+          </div>
         </Reveal>
 
-        <Reveal delay={0.24} className="flex flex-col rounded-2xl border border-edge bg-surface p-6">
+        {/* Scrape */}
+        <Reveal
+          delay={0.14}
+          className="flex flex-col rounded-2xl border border-edge bg-[linear-gradient(160deg,rgba(59,130,246,0.08),transparent_55%)] p-6 dark:bg-[linear-gradient(160deg,rgba(59,130,246,0.1),transparent_55%)]"
+        >
           <IconBadge>
             <Fire size={18} weight="duotone" />
           </IconBadge>
           <h3 className="mt-4 text-lg font-semibold">Scrape</h3>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Scrape any page. Firecrawl add-on for content extraction.
+            Firecrawl as an optional peer for content extraction, not live UI.
           </p>
-          <ContentLines />
+          <p className="mt-auto pt-6 font-mono text-xs text-muted">
+            type: &quot;scrape&quot;
+          </p>
         </Reveal>
 
+        {/* Desktop */}
         <Reveal
-          delay={0.3}
-          className={cn(
-            "flex flex-col rounded-2xl border border-edge bg-surface p-6"
-          )}
+          delay={0.16}
+          className="flex flex-col rounded-2xl border border-edge bg-surface p-6"
         >
           <IconBadge>
             <Desktop size={18} weight="duotone" />
@@ -188,7 +179,16 @@ export function FeatureBento() {
           <p className="mt-2 text-sm leading-relaxed text-muted">
             Browser and desktop sandboxes behind the same run.
           </p>
-          <WindowsGlyph />
+          <div className="mt-auto flex flex-wrap gap-1.5 pt-6">
+            {["browser", "desktop"].map((t) => (
+              <span
+                key={t}
+                className="rounded-full border border-edge bg-bg px-3 py-1 text-[11px] font-medium text-muted"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
         </Reveal>
       </div>
     </section>

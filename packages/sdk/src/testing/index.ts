@@ -75,6 +75,46 @@ export async function runConformance(subject: ConformanceSubject): Promise<Confo
     !canBash,
   );
 
+  const canGoto = subject.session.capabilities["browse.goto"] !== false;
+  await run(
+    "browse.goto about:blank when supported",
+    async () => {
+      const result = await subject.session.run({
+        type: "goto",
+        url: "about:blank",
+      } satisfies ToolAction);
+      if (result.type !== "text") throw new Error(`unexpected: ${JSON.stringify(result)}`);
+    },
+    !canGoto,
+  );
+
+  const canMouse = subject.session.capabilities["computer.mouse"] !== false;
+  await run(
+    "computer.mouse_move when supported",
+    async () => {
+      await subject.session.run({
+        type: "mouse_move",
+        coordinate: [1, 1],
+      } satisfies ToolAction);
+    },
+    !canMouse,
+  );
+
+  const canExtract = subject.session.capabilities["browse.extract"] !== false;
+  await run(
+    "browse.extract when supported",
+    async () => {
+      const result = await subject.session.run({
+        type: "extract",
+        query: "body",
+      } satisfies ToolAction);
+      if (result.type !== "json" && result.type !== "text") {
+        throw new Error(`unexpected: ${JSON.stringify(result)}`);
+      }
+    },
+    !canExtract,
+  );
+
   const passed = cases.filter((c) => c.status === "pass").length;
   const failed = cases.filter((c) => c.status === "fail").length;
   const skipped = cases.filter((c) => c.status === "skip").length;

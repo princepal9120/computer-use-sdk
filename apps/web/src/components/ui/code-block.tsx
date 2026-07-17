@@ -27,12 +27,15 @@ export function CodeBlock({
   lang = "tsx",
   title,
   showLineNumbers = true,
+  flush = false,
   className,
 }: {
   code: string;
   lang?: string;
   title?: string;
   showLineNumbers?: boolean;
+  /** Drop the outer border, rounding, and shadow so it can nest inside another card. */
+  flush?: boolean;
   className?: string;
 }) {
   const trimmed = code.trim();
@@ -40,7 +43,10 @@ export function CodeBlock({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-2xl border border-edge bg-[#0d1117] shadow-[0_8px_30px_rgba(0,0,0,0.12)]",
+        "overflow-hidden bg-[#0d1117]",
+        flush
+          ? ""
+          : "rounded-2xl border border-edge shadow-[0_8px_30px_rgba(0,0,0,0.12)]",
         className
       )}
     >

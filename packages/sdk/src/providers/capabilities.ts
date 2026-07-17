@@ -22,6 +22,7 @@ export const localCapabilities = defineCapabilities({
   "computer.key": "host",
   "computer.scroll": "host",
   "computer.drag": "host",
+  "browse.extract": "browser",
   "shell.run": "host",
   "editor.view": "host",
   "editor.create": "host",
@@ -32,11 +33,13 @@ export const localCapabilities = defineCapabilities({
 
 export const browserbaseCapabilities = defineCapabilities({
   ...browserComputer,
+  "browse.extract": "browser",
   "session.resume": "cloud",
 });
 
 export const browserUseCapabilities = defineCapabilities({
   ...browserComputer,
+  "browse.extract": "browser",
   "browse.agent": "agent",
   "vision.model": "vision",
   "session.resume": "cloud",
@@ -67,6 +70,7 @@ export const firecrawlCapabilities = defineCapabilities({
 /** OpenAI Computer Use — model loop + browser/desktop env. */
 export const openaiCapabilities = defineCapabilities({
   ...browserComputer,
+  "browse.extract": "browser",
   "browse.agent": "agent",
   "vision.model": "vision",
   "shell.run": "host",
@@ -77,6 +81,7 @@ export const openaiCapabilities = defineCapabilities({
 /** Anthropic Computer Use — model loop + browser/desktop env. */
 export const anthropicCapabilities = defineCapabilities({
   ...browserComputer,
+  "browse.extract": "browser",
   "browse.agent": "agent",
   "vision.model": "vision",
   "shell.run": "host",
@@ -90,11 +95,13 @@ export const anthropicCapabilities = defineCapabilities({
 
 export const steelCapabilities = defineCapabilities({
   ...browserComputer,
+  "browse.extract": "browser",
   "session.resume": "cloud",
 });
 
 export const hyperbrowserCapabilities = defineCapabilities({
   ...browserComputer,
+  "browse.extract": "browser",
   "browse.agent": "agent",
   "session.resume": "cloud",
 });
@@ -129,9 +136,7 @@ export const stagehandCapabilities = defineCapabilities({
 });
 
 export const agentqlCapabilities = defineCapabilities({
-  "browse.goto": "browser",
-  "browse.click": "browser",
-  "browse.type": "browser",
+  ...browserComputer,
   "browse.extract": "vision",
   "vision.model": "vision",
   "surface.browser": "full",
@@ -147,6 +152,7 @@ export const midsceneCapabilities = defineCapabilities({
 
 export const nanobrowserCapabilities = defineCapabilities({
   ...browserComputer,
+  "browse.extract": "browser",
   "browse.agent": "agent",
   "vision.model": "vision",
 });
@@ -158,5 +164,6 @@ export const playwrightMcpCapabilities = defineCapabilities({
   "computer.key": "host",
   "computer.scroll": "host",
   "computer.drag": "host",
+  "browse.extract": "browser",
   "surface.api": "api",
 });

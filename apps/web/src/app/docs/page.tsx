@@ -270,8 +270,12 @@ export default function DocsPage() {
       </P>
       <div className="mt-4 flex flex-wrap gap-2">
         {peers.map((p) => (
-          <span key={p} className="rounded-lg border border-edge bg-surface px-3 py-1.5 font-mono text-sm text-fg/80">
-            {p}
+          <span
+            key={p.name}
+            className="rounded-lg border border-edge bg-surface px-3 py-1.5 font-mono text-sm text-fg/80"
+            title={p.for}
+          >
+            {p.name}
           </span>
         ))}
       </div>

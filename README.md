@@ -20,10 +20,28 @@ bun add @prince/computer-use-sdk
 import { createSession } from "@prince/computer-use-sdk";
 import { local } from "@prince/computer-use-sdk/local";
 
-await using session = await createSession({ provider: local() });
+await using session = await createSession({
+  provider: local({ headless: true }),
+});
+
+// Browse
 await session.run({ type: "goto", url: "https://example.com" });
+await session.run({ type: "click", selector: "a" });
+await session.run({ type: "type", selector: "input", text: "hello" });
+await session.run({ type: "wait", ms: 500 });
+await session.run({ type: "extract", query: "h1" });
+
+// Computer (mouse / keyboard / screenshot)
+await session.run({ type: "mouse_move", coordinate: [100, 100] });
+await session.run({ type: "left_click", coordinate: [100, 100] });
+await session.run({ type: "key", text: "Enter" });
 await session.screenshot();
+
+// Host shell + text editor (local / anthropic-style)
+await session.run({ type: "bash", command: "echo ok" });
 ```
+
+Same `createSession({ provider })` surface works across all 16 providers — swap the import, keep the actions.
 
 ## Provider matrix
 

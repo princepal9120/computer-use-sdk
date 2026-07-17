@@ -2,11 +2,8 @@ import { PlaywrightComputer } from "../../core/engine";
 import { ComputerUseError, unsupported } from "../../core/errors";
 import type { ComputerProvider, ComputerRuntime } from "../../core/provider";
 import type { Display, ToolAction, ToolResult } from "../../core/types";
-import {
-  isComputerActionType,
-  loadOptionalPeer,
-  requireEnv,
-} from "../../internal/provider-utils";
+import { runPlaywrightAction } from "../../internal/cdp-runtime";
+import { loadOptionalPeer, requireEnv } from "../../internal/provider-utils";
 import { browserUseCapabilities } from "../capabilities";
 
 export interface BrowserUseOptions {
@@ -105,30 +102,18 @@ export function browserUse(
             return runAgentTask(client, action.task, action.maxSteps);
           }
           if (!computer) {
-            if (action.type === "goto" || action.type === "click" || action.type === "type") {
+            if (
+              action.type === "goto"
+              || action.type === "click"
+              || action.type === "type"
+              || action.type === "extract"
+            ) {
               // Fall back to agent for high-level browse without CDP
-              return runAgentTask(
-                client,
-                describeBrowseAsTask(action),
-              );
+              return runAgentTask(client, describeBrowseAsTask(action));
             }
             return unsupported("browser-use", `${action.type} (no CDP session)`);
           }
-          if (isComputerActionType(action.type)) {
-            return computer.execute(action as Extract<ToolAction, { type: typeof action.type }>);
-          }
-          switch (action.type) {
-            case "goto":
-              return computer.goto(action.url);
-            case "click":
-              return computer.clickTarget(action);
-            case "type":
-              return computer.typeText(action.text, action.selector);
-            case "wait":
-              return computer.wait(action);
-            default:
-              return unsupported("browser-use", action.type);
-          }
+          return runPlaywrightAction(computer, "browser-use", action);
         },
         async screenshot() {
           if (computer) return computer.screenshot();

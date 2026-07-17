@@ -1,6 +1,8 @@
+import type { Browser, Page } from "playwright";
+import { PlaywrightComputer } from "../../core/engine";
 import type { ComputerProvider, ComputerRuntime } from "../../core/provider";
 import type { Display, ToolAction, ToolResult } from "../../core/types";
-import { unsupported } from "../../core/errors";
+import { runPlaywrightAction } from "../../internal/cdp-runtime";
 import { loadOptionalPeer, requireEnv } from "../../internal/provider-utils";
 import { stagehandCapabilities } from "../capabilities";
 
@@ -19,6 +21,7 @@ export { stagehandCapabilities };
 /**
  * Stagehand (Browserbase) — AI-assisted browser framework.
  * Peer: `@browserbasehq/stagehand`.
+ * Full computer + browse actions via Playwright; agent/extract via Stagehand AI.
  */
 export function stagehand(options: StagehandOptions = {}): ComputerProvider {
   return {
@@ -60,6 +63,13 @@ export function stagehand(options: StagehandOptions = {}): ComputerProvider {
       });
       await sh.init();
 
+      // Stagehand owns the browser lifecycle; attach without ownBrowser.
+      const page = sh.page as Page;
+      const browser = (page.context().browser() ?? sh.browser) as Browser | null;
+      const computer = browser
+        ? PlaywrightComputer.attach(browser, page, display, false)
+        : null;
+
       const runtime: ComputerRuntime = {
         id: `stagehand-${crypto.randomUUID().slice(0, 8)}`,
         raw: sh,
@@ -67,61 +77,65 @@ export function stagehand(options: StagehandOptions = {}): ComputerProvider {
         display,
         async execute(action: ToolAction): Promise<ToolResult> {
           switch (action.type) {
-            case "goto":
-              await sh.page.goto(action.url);
-              return { type: "text", text: `Navigated to ${action.url}` };
             case "agent": {
               const result = await sh.act(action.task);
               return { type: "json", data: result };
             }
             case "extract": {
               if (action.url) await sh.page.goto(action.url);
-              const data = await sh.extract(action.query);
-              return { type: "json", data };
+              try {
+                const data = await sh.extract(action.query);
+                return { type: "json", data };
+              } catch {
+                if (computer) return computer.extract(action.query);
+                throw new Error("Stagehand extract failed and no Playwright page attached");
+              }
             }
             case "click":
               if (action.selector) {
                 await sh.page.click(action.selector);
                 return { type: "text", text: `Clicked ${action.selector}` };
               }
-              if (action.text) {
-                await sh.act(`click on ${action.text}`);
-                return { type: "text", text: `Clicked text ${action.text}` };
+              if (action.coordinate && computer) {
+                return computer.clickTarget(action);
               }
-              return unsupported("stagehand", "click");
+              if (action.text) {
+                try {
+                  await sh.act(`click on ${action.text}`);
+                  return { type: "text", text: `Clicked text ${action.text}` };
+                } catch {
+                  if (computer) return computer.clickTarget(action);
+                  throw new Error(`Unable to click text: ${action.text}`);
+                }
+              }
+              if (computer) return computer.clickTarget(action);
+              throw new Error("click requires selector, text, or coordinate");
             case "type":
               if (action.selector) {
                 await sh.page.fill(action.selector, action.text);
                 return { type: "text", text: `Typed into ${action.selector}` };
               }
+              if (computer) return computer.typeText(action.text);
               await sh.act(`type ${JSON.stringify(action.text)}`);
               return { type: "text", text: "Typed" };
-            case "wait":
-              if (action.selector) await sh.page.waitForSelector(action.selector);
-              else await sh.page.waitForTimeout(action.ms ?? 1000);
-              return { type: "text", text: "Waited" };
-            case "screenshot": {
-              const buf = await sh.page.screenshot({ type: "png" });
-              return {
-                type: "image",
-                data: Buffer.from(buf).toString("base64"),
-                mediaType: "image/png",
-              };
-            }
             default:
-              // try act() for free-form computer-like actions
-              if ("type" in action) {
+              if (computer) {
                 try {
-                  const result = await sh.act(JSON.stringify(action));
-                  return { type: "json", data: result };
+                  return await runPlaywrightAction(computer, "stagehand", action);
                 } catch {
-                  return unsupported("stagehand", action.type);
+                  // fall through to act for free-form
                 }
               }
-              return unsupported("stagehand", (action as { type: string }).type);
+              try {
+                const result = await sh.act(JSON.stringify(action));
+                return { type: "json", data: result };
+              } catch {
+                throw new Error(`stagehand does not support ${action.type}`);
+              }
           }
         },
         async screenshot() {
+          if (computer) return computer.screenshot();
           const buf = await sh.page.screenshot({ type: "png" });
           return Buffer.from(buf).toString("base64");
         },
@@ -139,6 +153,7 @@ interface StagehandClient {
   close: () => Promise<void>;
   act: (instruction: string) => Promise<unknown>;
   extract: (instruction: string) => Promise<unknown>;
+  browser?: Browser;
   page: {
     goto: (url: string) => Promise<unknown>;
     click: (sel: string) => Promise<unknown>;
@@ -146,5 +161,6 @@ interface StagehandClient {
     waitForSelector: (sel: string) => Promise<unknown>;
     waitForTimeout: (ms: number) => Promise<unknown>;
     screenshot: (o: { type: "png" }) => Promise<Buffer | Uint8Array>;
+    context: () => { browser: () => Browser | null };
   };
 }

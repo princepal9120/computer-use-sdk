@@ -9,6 +9,7 @@ export interface PlaywrightMcpOptions {
   /** Optional existing CDP endpoint (attach instead of launch). */
   cdpUrl?: string;
   startUrl?: string;
+  headless?: boolean;
 }
 
 export { playwrightMcpCapabilities };
@@ -16,7 +17,7 @@ export { playwrightMcpCapabilities };
 /**
  * Playwright MCP-style surface — local Chromium with tool names aligned to
  * common Playwright MCP server actions (navigate, click, type, screenshot…).
- * No extra peer; uses bundled Playwright.
+ * No extra peer; uses bundled Playwright. Full computer + browse matrix.
  */
 export function playwrightMcp(options: PlaywrightMcpOptions = {}): ComputerProvider {
   return {
@@ -30,9 +31,13 @@ export function playwrightMcp(options: PlaywrightMcpOptions = {}): ComputerProvi
 
       const computer = options.cdpUrl
         ? await PlaywrightComputer.connect(options.cdpUrl, display)
-        : await PlaywrightComputer.launch(display);
+        : await PlaywrightComputer.launch({
+            display,
+            headless: options.headless ?? true,
+            startUrl: options.startUrl,
+          });
 
-      if (options.startUrl) await computer.goto(options.startUrl);
+      if (options.startUrl && options.cdpUrl) await computer.goto(options.startUrl);
 
       /** MCP tool name → ToolAction */
       const fromMcp = (name: string, args: Record<string, unknown>): ToolAction | null => {
@@ -69,6 +74,30 @@ export function playwrightMcp(options: PlaywrightMcpOptions = {}): ComputerProvi
               ms: Number(args.time ?? args.ms ?? 1000),
               selector: args.selector ? String(args.selector) : undefined,
             };
+          case "browser_extract":
+          case "extract":
+            return {
+              type: "extract",
+              query: String(args.query ?? args.selector ?? ""),
+              url: args.url ? String(args.url) : undefined,
+            };
+          case "browser_press":
+          case "press":
+            return { type: "key", text: String(args.key ?? args.text ?? "") };
+          case "browser_scroll":
+          case "scroll":
+            return {
+              type: "mouse_scroll",
+              coordinate: [Number(args.x ?? 0), Number(args.y ?? 0)],
+              scrollDirection: String(args.direction ?? "down") === "up" ? "up" : "down",
+              scrollAmount: Number(args.amount ?? 1),
+            };
+          case "browser_hover":
+          case "mouse_move":
+            return {
+              type: "mouse_move",
+              coordinate: [Number(args.x ?? 0), Number(args.y ?? 0)],
+            };
           default:
             return null;
         }
@@ -100,7 +129,10 @@ export function playwrightMcp(options: PlaywrightMcpOptions = {}): ComputerProvi
             const rest = action.task.slice(4).trim();
             const space = rest.indexOf(" ");
             const name = space === -1 ? rest : rest.slice(0, space);
-            const args = space === -1 ? {} : (JSON.parse(rest.slice(space + 1)) as Record<string, unknown>);
+            const args =
+              space === -1
+                ? {}
+                : (JSON.parse(rest.slice(space + 1)) as Record<string, unknown>);
             return runtime.raw.callMcpTool(name, args);
           }
           return runPlaywrightAction(computer, "playwright-mcp", action);

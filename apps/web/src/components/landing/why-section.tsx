@@ -9,40 +9,67 @@ await using session = await createSession({ provider: local() });
 await session.run({ type: "goto", url: "https://example.com" });
 await session.screenshot();`;
 
+const points = [
+  {
+    title: "One session shape",
+    body: "Providers stop shipping different session APIs. You get createSession and session.run everywhere.",
+  },
+  {
+    title: "Tree-shakeable adapters",
+    body: "Each provider is its own entry point. Your bundle only includes the drivers you import.",
+  },
+  {
+    title: "Shared action verbs",
+    body: (
+      <>
+        <InlineCode>goto</InlineCode>, <InlineCode>click</InlineCode>,{" "}
+        <InlineCode>type</InlineCode>, <InlineCode>screenshot</InlineCode>, and{" "}
+        <InlineCode>agent</InlineCode> map to each native API.
+      </>
+    ),
+  },
+];
+
 export function WhySection() {
   return (
-    <section id="why" className="mx-auto max-w-[1400px] scroll-mt-24 px-5 py-24 sm:px-8">
-      <div className="max-w-2xl">
-        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Why Computer Use SDK
-        </h2>
-        <div className="mt-6 space-y-4 text-base leading-relaxed text-muted">
-          <p>
-            Each provider ships its own session shape, its own action verbs,
-            and its own retry story. Computer Use SDK puts one session in front
-            of all of them.
+    <section
+      id="why"
+      className="mx-auto max-w-[1400px] scroll-mt-24 px-5 py-20 sm:px-8 sm:py-24"
+    >
+      <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2 lg:gap-16">
+        <div>
+          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            Why Computer Use SDK
+          </h2>
+          <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-muted">
+            Each stack invents its own verbs and session model. This SDK puts
+            one TypeScript surface in front of all of them.
           </p>
-          <p>
-            Every provider is a separate entry point, so your bundle only
-            carries the providers you actually drive. The core stays tiny.
-          </p>
-          <p>
-            One action vocabulary, <InlineCode>goto</InlineCode>,{" "}
-            <InlineCode>click</InlineCode>, <InlineCode>type</InlineCode>,{" "}
-            <InlineCode>screenshot</InlineCode>, and{" "}
-            <InlineCode>agent</InlineCode>, maps to each
-            provider&apos;s native calls. Swap one import, keep the same code.
-          </p>
-          <p>
-            Local ships bundled Playwright, so the first session runs with zero
-            extra installs. Cloud browsers, desktop sandboxes, vision agents,
-            and scrape plug in as optional peers.
-          </p>
+
+          <ul className="mt-10 space-y-0 divide-y divide-edge border-y border-edge">
+            {points.map((p) => (
+              <li key={p.title} className="py-5">
+                <h3 className="text-sm font-semibold text-fg">{p.title}</h3>
+                <p className="mt-1.5 max-w-[48ch] text-sm leading-relaxed text-muted">
+                  {p.body}
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
+
+        <Reveal className="lg:sticky lg:top-24">
+          <CodeBlock
+            code={quickstart}
+            lang="tsx"
+            title="session.ts"
+            showLineNumbers={false}
+          />
+          <p className="mt-3 text-xs text-muted">
+            Local ships bundled Playwright. No API key for the first run.
+          </p>
+        </Reveal>
       </div>
-      <Reveal className="mt-10 max-w-2xl">
-        <CodeBlock code={quickstart} lang="tsx" title="session.ts" showLineNumbers={false} />
-      </Reveal>
     </section>
   );
 }

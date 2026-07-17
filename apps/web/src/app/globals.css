@@ -12,6 +12,7 @@
   --color-muted: var(--muted);
   --color-edge: var(--edge);
 
+  /* Accent lock: electric blue, sat < 80% in use via opacity */
   --color-accent-50: #eff6ff;
   --color-accent-100: #dbeafe;
   --color-accent-200: #bfdbfe;
@@ -23,23 +24,30 @@
   --color-accent-800: #1e40af;
   --color-accent-900: #1e3a8a;
   --color-accent-950: #172554;
+
+  /* Shape scale: soft cards 16, chips 10, pills full */
+  --radius-card: 1rem;
+  --radius-chip: 0.625rem;
 }
 
 @layer base {
   :root {
-    --bg: #fafaf9;
+    /* Warm stone neutrals - not pure white/black */
+    --bg: #f7f7f5;
     --surface: #ffffff;
     --fg: #1c1917;
     --muted: #57534e;
-    --edge: #e7e5e4;
+    --edge: #e4e2df;
+    --shadow-tint: 28 25 23;
   }
 
   .dark {
-    --bg: #0a0a0a;
-    --surface: #111114;
+    --bg: #0c0c0e;
+    --surface: #131316;
     --fg: #f5f5f4;
     --muted: #a8a29e;
-    --edge: #26262a;
+    --edge: #27272a;
+    --shadow-tint: 0 0 0;
   }
 
   html {
@@ -60,8 +68,8 @@
   }
 
   ::selection {
-    background-color: var(--color-accent-500);
-    color: #fff;
+    background-color: color-mix(in srgb, var(--color-accent-500) 35%, transparent);
+    color: var(--fg);
   }
 
   ::-webkit-scrollbar {
@@ -91,8 +99,37 @@
     background-image:
       linear-gradient(to right, var(--edge) 1px, transparent 1px),
       linear-gradient(to bottom, var(--edge) 1px, transparent 1px);
-    background-size: 56px 56px;
+    background-size: 48px 48px;
   }
+  .shadow-surface {
+    box-shadow:
+      0 1px 0 rgb(var(--shadow-tint) / 0.04),
+      0 12px 40px -12px rgb(var(--shadow-tint) / 0.18);
+  }
+  .shadow-surface-lg {
+    box-shadow:
+      0 1px 0 rgb(var(--shadow-tint) / 0.05),
+      0 24px 64px -16px rgb(var(--shadow-tint) / 0.28);
+  }
+}
+
+/* One marquee per page: provider strip */
+@keyframes provider-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.provider-marquee {
+  animation: provider-marquee 48s linear infinite;
+  will-change: transform;
+}
+
+.provider-marquee:hover {
+  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -106,5 +143,8 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .provider-marquee {
+    animation: none;
   }
 }

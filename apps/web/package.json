@@ -7,6 +7,7 @@
     "dev": "next dev --port 3007",
     "build": "next build",
     "start": "next start",
+    "generate:icons": "bun scripts/generate-brand-icons.mjs",
     "lint": "echo ok",
     "typecheck": "tsc --noEmit",
     "test": "echo ok"

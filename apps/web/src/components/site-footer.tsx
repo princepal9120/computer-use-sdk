@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { GithubLogo } from "@/components/ui/icons";
+import { AnimatedBrandName } from "@/components/ui/animated-brand-name";
+import { SiteMark } from "@/components/ui/site-mark";
 import { site } from "@/lib/site";
 
 const columns = [
@@ -35,20 +37,8 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-10 px-5 py-16 sm:px-8 md:grid-cols-5">
         <div className="col-span-2 md:col-span-2">
           <Link href="/" className="flex items-center gap-2.5 text-fg">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-500 text-white">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M5 3l15 7.2-6.3 1.7L11 19 5 3z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">
-              {site.name}
-            </span>
+            <SiteMark size={28} />
+            <AnimatedBrandName />
           </Link>
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
             {site.tagline} Open source, plug any provider in or out.

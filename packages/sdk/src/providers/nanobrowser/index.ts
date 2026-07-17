@@ -12,6 +12,7 @@ export interface NanobrowserOptions {
   apiKey?: string;
   baseUrl?: string;
   display?: Partial<Display>;
+  headless?: boolean;
   /** When no CDP, launch local Chromium (experimental fallback). */
   fallbackLocal?: boolean;
 }
@@ -46,7 +47,10 @@ export function nanobrowser(options: NanobrowserOptions = {}): ComputerProvider 
       if (cdpUrl) {
         computer = await PlaywrightComputer.connect(cdpUrl, display);
       } else if (options.fallbackLocal !== false) {
-        computer = await PlaywrightComputer.launch(display);
+        computer = await PlaywrightComputer.launch({
+          display,
+          headless: options.headless ?? true,
+        });
       } else {
         requireEnv("NANOBROWSER_CDP_URL", cdpUrl, "nanobrowser");
       }

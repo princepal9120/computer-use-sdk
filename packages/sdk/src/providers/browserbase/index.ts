@@ -1,12 +1,8 @@
 import { PlaywrightComputer } from "../../core/engine";
-import { unsupported } from "../../core/errors";
 import type { ComputerProvider, ComputerRuntime } from "../../core/provider";
 import type { Display, ToolAction, ToolResult } from "../../core/types";
-import {
-  isComputerActionType,
-  loadOptionalPeer,
-  requireEnv,
-} from "../../internal/provider-utils";
+import { runPlaywrightAction } from "../../internal/cdp-runtime";
+import { loadOptionalPeer, requireEnv } from "../../internal/provider-utils";
 import { browserbaseCapabilities } from "../capabilities";
 
 export interface BrowserbaseOptions {
@@ -102,27 +98,15 @@ export function browserbase(
         capabilities: browserbaseCapabilities,
         display,
         async execute(action: ToolAction): Promise<ToolResult> {
-          if (isComputerActionType(action.type)) {
-            return computer.execute(action as Extract<ToolAction, { type: typeof action.type }>);
-          }
-          switch (action.type) {
-            case "goto":
-              return computer.goto(action.url);
-            case "click":
-              return computer.clickTarget(action);
-            case "type":
-              return computer.typeText(action.text, action.selector);
-            case "wait":
-              return computer.wait(action);
-            default:
-              return unsupported("browserbase", action.type);
-          }
+          return runPlaywrightAction(computer, "browserbase", action);
         },
         screenshot: () => computer.screenshot(),
         async stop() {
           await computer.stop();
           if (createdHere) {
-            await bb.sessions.update(sessionId!, { projectId, status: "REQUEST_RELEASE" }).catch(() => undefined);
+            await bb.sessions
+              .update(sessionId!, { projectId, status: "REQUEST_RELEASE" })
+              .catch(() => undefined);
           }
         },
       };

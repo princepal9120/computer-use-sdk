@@ -26,6 +26,15 @@ export const metadata: Metadata = {
   },
   description:
     "One TypeScript API for computer-use, browser agents, desktops, and scrape. Plug any provider in, swap one import.",
+  // favicon.ico, icon.png, apple-icon.png live in app/ (same brand mark as nav/footer)
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+      { url: "/brand/mark.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
+  },
   openGraph: {
     title: "Computer Use SDK - one API for every computer-use stack",
     description:

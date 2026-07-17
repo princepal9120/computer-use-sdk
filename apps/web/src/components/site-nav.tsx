@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, GithubLogo, List } from "@/components/ui/icons";
+import { AnimatedBrandName } from "@/components/ui/animated-brand-name";
+import { SiteMark } from "@/components/ui/site-mark";
 import { site } from "@/lib/site";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SearchPalette } from "@/components/search-palette";
@@ -13,20 +15,6 @@ const links = [
   { label: "Why", href: "/#why" },
   { label: "Matrix", href: "/docs#matrix" },
 ];
-
-function CursorGlyph() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M5 3l15 7.2-6.3 1.7L11 19 5 3z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
@@ -53,12 +41,8 @@ export function SiteNav() {
           className="flex items-center gap-2.5 text-fg"
           aria-label={site.name}
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-500 text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]">
-            <CursorGlyph />
-          </span>
-          <span className="text-[15px] font-semibold tracking-tight">
-            {site.name}
-          </span>
+          <SiteMark size={28} />
+          <AnimatedBrandName />
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">

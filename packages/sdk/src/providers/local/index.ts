@@ -5,8 +5,8 @@ import { runEditorAction } from "../../core/editor";
 import { PlaywrightComputer } from "../../core/engine";
 import { ComputerUseError, unsupported } from "../../core/errors";
 import type { ComputerProvider, ComputerRuntime } from "../../core/provider";
-import type { ComputerAction, Display, ToolAction, ToolResult } from "../../core/types";
-import { isComputerActionType } from "../../internal/provider-utils";
+import type { Display, ToolAction, ToolResult } from "../../core/types";
+import { runPlaywrightAction } from "../../internal/cdp-runtime";
 import { localCapabilities } from "../capabilities";
 
 const execFileAsync = promisify(execFile);
@@ -16,6 +16,9 @@ export interface LocalOptions {
   cwd?: string;
   env?: Readonly<Record<string, string>>;
   shell?: string;
+  /** Defaults to true. */
+  headless?: boolean;
+  startUrl?: string;
 }
 
 export { localCapabilities };
@@ -33,7 +36,11 @@ export function local(options: LocalOptions = {}): ComputerProvider<PlaywrightCo
       const cwd = options.cwd ?? createOptions.cwd ?? process.cwd();
       const env = { ...createOptions.env, ...options.env };
       const shell = options.shell ?? "/bin/bash";
-      const computer = await PlaywrightComputer.launch(display);
+      const computer = await PlaywrightComputer.launch({
+        display,
+        headless: options.headless ?? true,
+        startUrl: options.startUrl,
+      });
 
       const runtime: ComputerRuntime<PlaywrightComputer> = {
         id: `local-${crypto.randomUUID().slice(0, 8)}`,
@@ -41,18 +48,7 @@ export function local(options: LocalOptions = {}): ComputerProvider<PlaywrightCo
         capabilities: localCapabilities,
         display,
         async execute(action: ToolAction): Promise<ToolResult> {
-          if (isComputerActionType(action.type)) {
-            return computer.execute(action as ComputerAction);
-          }
           switch (action.type) {
-            case "goto":
-              return computer.goto(action.url);
-            case "click":
-              return computer.clickTarget(action);
-            case "type":
-              return computer.typeText(action.text, action.selector);
-            case "wait":
-              return computer.wait(action);
             case "bash":
               return runBash(shell, cwd, env, action.command);
             case "view":
@@ -71,7 +67,7 @@ export function local(options: LocalOptions = {}): ComputerProvider<PlaywrightCo
             case "search":
               return unsupported("local", action.type);
             default:
-              return unsupported("local", (action as { type: string }).type);
+              return runPlaywrightAction(computer, "local", action);
           }
         },
         screenshot: () => computer.screenshot(),

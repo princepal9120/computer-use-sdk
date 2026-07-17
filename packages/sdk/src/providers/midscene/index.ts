@@ -1,6 +1,8 @@
+import type { Browser, Page } from "playwright";
+import { PlaywrightComputer } from "../../core/engine";
 import type { ComputerProvider, ComputerRuntime } from "../../core/provider";
 import type { Display, ToolAction, ToolResult } from "../../core/types";
-import { unsupported } from "../../core/errors";
+import { runPlaywrightAction } from "../../internal/cdp-runtime";
 import { loadOptionalPeer } from "../../internal/provider-utils";
 import { midsceneCapabilities } from "../capabilities";
 
@@ -16,6 +18,8 @@ export { midsceneCapabilities };
 /**
  * Midscene.js — AI browser automation with vision. Peer: `@midscene/web`.
  * Uses Playwright under the hood. Configure model keys via Midscene env vars.
+ * All standard computer + browse actions work; `agent` / natural-language
+ * extract use Midscene's vision models when available.
  */
 export function midscene(options: MidsceneOptions = {}): ComputerProvider {
   return {
@@ -36,6 +40,12 @@ export function midscene(options: MidsceneOptions = {}): ComputerProvider {
         viewport: { width: display.width, height: display.height },
       });
       const page = await context.newPage();
+      const computer = PlaywrightComputer.attach(
+        browser as Browser,
+        page as Page,
+        display,
+        true,
+      );
 
       const mod = await loadOptionalPeer(
         "@midscene/web",
@@ -61,61 +71,51 @@ export function midscene(options: MidsceneOptions = {}): ComputerProvider {
 
       const runtime: ComputerRuntime = {
         id: `midscene-${crypto.randomUUID().slice(0, 8)}`,
-        raw: { page, agent },
+        raw: { page, agent, computer },
         capabilities: midsceneCapabilities,
         display,
         async execute(action: ToolAction): Promise<ToolResult> {
           switch (action.type) {
-            case "goto":
-              await page.goto(action.url, { waitUntil: "domcontentloaded" });
-              return { type: "text", text: `Navigated to ${action.url}` };
             case "agent":
               await agent.aiAction(action.task);
               return { type: "text", text: `Midscene completed: ${action.task}` };
             case "extract": {
               if (action.url) await page.goto(action.url, { waitUntil: "domcontentloaded" });
-              const data = await agent.aiQuery(action.query);
-              return { type: "json", data };
+              try {
+                const data = await agent.aiQuery(action.query);
+                return { type: "json", data };
+              } catch {
+                // Fall back to DOM extract when vision model is unavailable
+                return computer.extract(action.query);
+              }
             }
             case "click":
-              if (action.text) {
-                await agent.aiTap(action.text);
-                return { type: "text", text: `Tapped ${action.text}` };
+              if (action.text && !action.selector && !action.coordinate) {
+                try {
+                  await agent.aiTap(action.text);
+                  return { type: "text", text: `Tapped ${action.text}` };
+                } catch {
+                  return computer.clickTarget(action);
+                }
               }
-              if (action.selector) {
-                await page.click(action.selector);
-                return { type: "text", text: `Clicked ${action.selector}` };
-              }
-              return unsupported("midscene", "click");
+              return computer.clickTarget(action);
             case "type":
-              if (action.selector) {
-                await page.fill(action.selector, action.text);
-              } else {
-                await agent.aiInput(action.text, "the focused field");
+              if (!action.selector) {
+                try {
+                  await agent.aiInput(action.text, "the focused field");
+                  return { type: "text", text: "Typed" };
+                } catch {
+                  return computer.typeText(action.text);
+                }
               }
-              return { type: "text", text: "Typed" };
-            case "wait":
-              if (action.selector) await page.waitForSelector(action.selector);
-              else await page.waitForTimeout(action.ms ?? 1000);
-              return { type: "text", text: "Waited" };
-            case "screenshot": {
-              const buf = await page.screenshot({ type: "png" });
-              return {
-                type: "image",
-                data: buf.toString("base64"),
-                mediaType: "image/png",
-              };
-            }
+              return computer.typeText(action.text, action.selector);
             default:
-              return unsupported("midscene", action.type);
+              return runPlaywrightAction(computer, "midscene", action);
           }
         },
-        async screenshot() {
-          const buf = await page.screenshot({ type: "png" });
-          return buf.toString("base64");
-        },
+        screenshot: () => computer.screenshot(),
         async stop() {
-          await browser.close();
+          await computer.stop();
         },
       };
       return runtime;
