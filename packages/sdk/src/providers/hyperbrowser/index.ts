@@ -1,3 +1,4 @@
+import { ComputerUseError } from "../../core/errors";
 import type { ComputerProvider } from "../../core/provider";
 import type { Display, ToolResult } from "../../core/types";
 import { createCdpRuntime } from "../../internal/cdp-runtime";
@@ -60,15 +61,28 @@ export function hyperbrowser(options: HyperbrowserOptions = {}): ComputerProvide
       }
 
       const agent = async (task: string, maxSteps?: number): Promise<ToolResult> => {
-        if (!client.agents?.start) {
-          return { type: "text", text: `Hyperbrowser agent unavailable; task: ${task}` };
-        }
-        const run = await client.agents.start({
+        // Real API (v0.91.x): client.agents.browserUse.startAndWait({ task, sessionId?, maxSteps? })
+        // returns a BrowserUseTaskResponse whose final output lives at `data.finalResult`.
+        const result = await client.agents.browserUse.startAndWait({
           task,
           sessionId,
-          maxSteps,
+          ...(maxSteps !== undefined ? { maxSteps } : {}),
         });
-        return { type: "json", data: run };
+        if (result.error) {
+          throw new ComputerUseError({
+            code: "driver_error",
+            provider: "hyperbrowser",
+            operation: "agent",
+            message: result.error,
+          });
+        }
+        const finalResult = result.data?.finalResult;
+        return {
+          type: "text",
+          text:
+            finalResult
+            ?? `Hyperbrowser agent finished with status: ${result.status}`,
+        };
       };
 
       return createCdpRuntime({
@@ -90,14 +104,29 @@ export function hyperbrowser(options: HyperbrowserOptions = {}): ComputerProvide
   };
 }
 
+/** Subset of @hyperbrowser/sdk's BrowserUseTaskResponse we consume. */
+interface HbBrowserUseTaskResponse {
+  jobId: string;
+  status: string;
+  data?: { finalResult: string | null } | null;
+  error?: string | null;
+  liveUrl?: string | null;
+}
+
 interface HbClient {
   sessions: {
     create: (body?: Record<string, unknown>) => Promise<Record<string, unknown>>;
     get: (id: string) => Promise<Record<string, unknown>>;
     stop: (id: string) => Promise<unknown>;
   };
-  agents?: {
-    start: (body: Record<string, unknown>) => Promise<unknown>;
+  agents: {
+    browserUse: {
+      startAndWait: (params: {
+        task: string;
+        sessionId?: string;
+        maxSteps?: number;
+      }) => Promise<HbBrowserUseTaskResponse>;
+    };
   };
 }
 

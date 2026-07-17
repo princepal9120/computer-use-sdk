@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { PlaywrightComputer } from "../../core/engine";
-import { ComputerUseError, unsupported } from "../../core/errors";
+import { ComputerUseError } from "../../core/errors";
 import type { ComputerProvider, ComputerRuntime } from "../../core/provider";
 import type { ComputerAction, Display, ToolAction, ToolResult } from "../../core/types";
 import { runPlaywrightAction } from "../../internal/cdp-runtime";
@@ -73,6 +73,8 @@ export function openai(options: OpenAIComputerOptions = {}): ComputerProvider {
               text: `${stdout}${stderr ? `\n[stderr]\n${stderr}` : ""}`.trim() || "(no output)",
             };
           }
+          // Direct computer/browse actions run against the local Playwright env.
+          // Anything else resolves to a clear `unsupported` error.
           return runPlaywrightAction(computer, "openai", action);
         },
         screenshot: () => computer.screenshot(),
@@ -83,24 +85,81 @@ export function openai(options: OpenAIComputerOptions = {}): ComputerProvider {
   };
 }
 
+/**
+ * Minimal, accurate view of the openai v6 Responses API surface used here.
+ * Mirrors `OpenAI.Responses.*` shapes without coupling to the dynamically
+ * loaded peer's constructor typing (see `loadOptionalPeer`).
+ */
 interface OpenAIClient {
   responses: {
-    create: (body: Record<string, unknown>) => Promise<OpenAIResponse>;
+    create: (body: ResponsesRequest) => Promise<OpenAIResponse>;
   };
+}
+
+interface ComputerUseTool {
+  type: "computer_use_preview";
+  display_width: number;
+  display_height: number;
+  environment: "browser";
+}
+
+interface SafetyCheck {
+  id: string;
+  code?: string | null;
+  message?: string | null;
+}
+
+/** `computer_call` output item: the action is nested under `.action`. */
+interface OpenAIComputerAction {
+  type: string;
+  x?: number;
+  y?: number;
+  button?: "left" | "right" | "wheel" | "back" | "forward" | string;
+  keys?: string[] | null;
+  path?: Array<{ x: number; y: number }>;
+  scroll_x?: number;
+  scroll_y?: number;
+  text?: string;
+}
+
+interface OpenAIOutputItem {
+  type?: string;
+  id?: string;
+  call_id?: string;
+  status?: string;
+  role?: string;
+  action?: OpenAIComputerAction;
+  content?: Array<{ type?: string; text?: string }>;
+  pending_safety_checks?: SafetyCheck[];
 }
 
 interface OpenAIResponse {
   id?: string;
-  output?: Array<{
-    type?: string;
-    content?: Array<{ type?: string; text?: string }>;
-    actions?: Array<Record<string, unknown>>;
-    call_id?: string;
-    id?: string;
-    status?: string;
-    role?: string;
-  }>;
+  output?: OpenAIOutputItem[];
   output_text?: string;
+}
+
+type OpenAIInputItem =
+  | {
+      role: "user";
+      content: Array<
+        | { type: "input_text"; text: string }
+        | { type: "input_image"; image_url: string }
+      >;
+    }
+  | {
+      type: "computer_call_output";
+      call_id: string;
+      output: { type: "computer_screenshot"; image_url: string };
+      acknowledged_safety_checks?: SafetyCheck[];
+    };
+
+interface ResponsesRequest {
+  model: string;
+  tools: ComputerUseTool[];
+  truncation: "auto";
+  input: OpenAIInputItem[];
+  previous_response_id?: string;
 }
 
 async function runOpenAILoop(
@@ -111,55 +170,38 @@ async function runOpenAILoop(
   maxSteps: number,
 ): Promise<ToolResult> {
   const logs: string[] = [];
+  const tools: ComputerUseTool[] = [
+    {
+      type: "computer_use_preview",
+      display_width: computer.display.width,
+      display_height: computer.display.height,
+      environment: "browser",
+    },
+  ];
+
+  // First turn: user task + a screenshot of the current screen.
+  let input: OpenAIInputItem[] = [
+    {
+      role: "user",
+      content: [
+        { type: "input_text", text: task },
+        {
+          type: "input_image",
+          image_url: `data:image/png;base64,${await computer.screenshot()}`,
+        },
+      ],
+    },
+  ];
   let previousResponseId: string | undefined;
 
   for (let step = 0; step < maxSteps; step++) {
-    const screenshot = await computer.screenshot();
-    const body: Record<string, unknown> = {
-      model,
-      tools: [
-        {
-          type: "computer_use_preview",
-          display_width: computer.display.width,
-          display_height: computer.display.height,
-          environment: "browser",
-        },
-      ],
-      truncation: "auto",
-    };
-
-    if (previousResponseId) {
-      body.previous_response_id = previousResponseId;
-      body.input = [
-        {
-          type: "computer_call_output",
-          call_id: "pending",
-          output: {
-            type: "computer_screenshot",
-            image_url: `data:image/png;base64,${screenshot}`,
-          },
-        },
-      ];
-    } else {
-      body.input = [
-        {
-          role: "user",
-          content: [
-            { type: "input_text", text: task },
-            {
-              type: "input_image",
-              image_url: `data:image/png;base64,${screenshot}`,
-            },
-          ],
-        },
-      ];
-    }
+    const request: ResponsesRequest = { model, tools, truncation: "auto", input };
+    if (previousResponseId) request.previous_response_id = previousResponseId;
 
     let response: OpenAIResponse;
     try {
-      response = await client.responses.create(body);
+      response = await client.responses.create(request);
     } catch (error) {
-      // Fallback: chat completions style message if responses API shape differs
       throw new ComputerUseError({
         code: "driver_error",
         provider: "openai",
@@ -171,101 +213,163 @@ async function runOpenAILoop(
 
     previousResponseId = response.id;
     const outputs = response.output ?? [];
-    let acted = false;
 
+    // Collect any assistant text emitted this turn.
     for (const item of outputs) {
-      if (item.type === "computer_call" || item.type === "computer_use_preview") {
-        const actions = (item as { actions?: Array<Record<string, unknown>> }).actions ?? [
-          item as Record<string, unknown>,
-        ];
-        for (const raw of actions) {
-          const mapped = mapOpenAIAction(raw);
-          if (mapped) {
-            await runPlaywrightAction(computer, "openai", mapped);
-            logs.push(`step ${step}: ${mapped.type}`);
-            acted = true;
-          }
-        }
-        // fix call_id for next iteration if present
-        if (item.call_id || item.id) {
-          body.input = [
-            {
-              type: "computer_call_output",
-              call_id: item.call_id ?? item.id,
-              output: {
-                type: "computer_screenshot",
-                image_url: `data:image/png;base64,${await computer.screenshot()}`,
-              },
-            },
-          ];
-        }
-      }
-      if (item.type === "message" || item.role === "assistant") {
-        const text = item.content?.map((c) => c.text).filter(Boolean).join("\n");
-        if (text) {
-          logs.push(text);
-          return { type: "text", text: logs.join("\n") };
-        }
+      if (item.type === "message" && item.content) {
+        const text = item.content
+          .map((c) => c.text)
+          .filter(Boolean)
+          .join("\n");
+        if (text) logs.push(text);
       }
     }
 
-    if (response.output_text) {
-      logs.push(response.output_text);
-      return { type: "text", text: logs.join("\n") };
+    const computerCalls = outputs.filter((item) => item.type === "computer_call");
+
+    // No pending computer action → the model is done; return final text.
+    if (computerCalls.length === 0) {
+      const finalText = response.output_text ?? logs.join("\n");
+      return {
+        type: "text",
+        text: finalText || "OpenAI computer-use finished without final text",
+      };
     }
-    if (!acted) break;
+
+    // Execute each requested action and reply with a `computer_call_output`
+    // referencing the real `call_id` + a fresh screenshot.
+    const nextInput: OpenAIInputItem[] = [];
+    for (const call of computerCalls) {
+      const mapped = call.action ? mapOpenAIAction(call.action) : null;
+      if (mapped) {
+        await runPlaywrightAction(computer, "openai", mapped);
+        logs.push(`step ${step}: ${call.action?.type ?? mapped.type}`);
+      } else if (call.action) {
+        logs.push(`step ${step}: unsupported action ${call.action.type}`);
+      }
+      const shot = await computer.screenshot();
+      const outputItem: OpenAIInputItem = {
+        type: "computer_call_output",
+        call_id: call.call_id ?? call.id ?? "",
+        output: { type: "computer_screenshot", image_url: `data:image/png;base64,${shot}` },
+      };
+      if (call.pending_safety_checks?.length) {
+        outputItem.acknowledged_safety_checks = call.pending_safety_checks;
+      }
+      nextInput.push(outputItem);
+    }
+    input = nextInput;
   }
 
-  return { type: "text", text: logs.join("\n") || "OpenAI computer-use finished without final text" };
+  return {
+    type: "text",
+    text: logs.join("\n") || "OpenAI computer-use reached max steps",
+  };
 }
 
-function mapOpenAIAction(raw: Record<string, unknown>): ToolAction | null {
-  const type = String(raw.type ?? raw.action ?? "");
-  const x = Number(raw.x ?? (raw.coordinate as number[] | undefined)?.[0] ?? 0);
-  const y = Number(raw.y ?? (raw.coordinate as number[] | undefined)?.[1] ?? 0);
+/** Normalize an OpenAI key name to a Playwright key/chord component. */
+function toPlaywrightKey(key: string): string {
+  const map: Record<string, string> = {
+    ctrl: "Control",
+    control: "Control",
+    cmd: "Meta",
+    command: "Meta",
+    meta: "Meta",
+    win: "Meta",
+    super: "Meta",
+    alt: "Alt",
+    option: "Alt",
+    opt: "Alt",
+    shift: "Shift",
+    enter: "Enter",
+    return: "Enter",
+    esc: "Escape",
+    escape: "Escape",
+    tab: "Tab",
+    space: "Space",
+    spacebar: "Space",
+    backspace: "Backspace",
+    delete: "Delete",
+    del: "Delete",
+    up: "ArrowUp",
+    down: "ArrowDown",
+    left: "ArrowLeft",
+    right: "ArrowRight",
+    arrowup: "ArrowUp",
+    arrowdown: "ArrowDown",
+    arrowleft: "ArrowLeft",
+    arrowright: "ArrowRight",
+    pageup: "PageUp",
+    pagedown: "PageDown",
+    home: "Home",
+    end: "End",
+  };
+  const lower = key.toLowerCase();
+  if (map[lower]) return map[lower];
+  return key.length === 1 ? key : key.charAt(0).toUpperCase() + key.slice(1);
+}
 
-  switch (type) {
+/**
+ * Map a Responses computer-use action (`item.action`) to this SDK's engine
+ * actions. Returns null for actions with no local equivalent.
+ */
+function mapOpenAIAction(action: OpenAIComputerAction): ToolAction | null {
+  const x = Number(action.x ?? 0);
+  const y = Number(action.y ?? 0);
+
+  switch (action.type) {
     case "screenshot":
       return { type: "screenshot" };
     case "click":
-    case "left_click":
-      return { type: "left_click", coordinate: [x, y] };
+      switch (action.button) {
+        case "right":
+          return { type: "right_click", coordinate: [x, y] };
+        case "wheel":
+          return { type: "middle_click", coordinate: [x, y] };
+        case "back":
+          return { type: "key", text: "Alt+ArrowLeft" };
+        case "forward":
+          return { type: "key", text: "Alt+ArrowRight" };
+        default:
+          return { type: "left_click", coordinate: [x, y] };
+      }
     case "double_click":
       return { type: "double_click", coordinate: [x, y] };
-    case "right_click":
-      return { type: "right_click", coordinate: [x, y] };
     case "move":
-    case "mouse_move":
       return { type: "mouse_move", coordinate: [x, y] };
-    case "type":
-    case "type_text":
-      return { type: "type", text: String(raw.text ?? raw.keys ?? "") };
-    case "keypress":
-    case "key":
-      return { type: "key", text: String(raw.key ?? raw.keys ?? raw.text ?? "") };
-    case "scroll":
+    case "scroll": {
+      const dy = Number(action.scroll_y ?? 0);
+      const dx = Number(action.scroll_x ?? 0);
+      const amount = Math.max(1, Math.round((Math.abs(dy) || Math.abs(dx)) / 100));
       return {
         type: "mouse_scroll",
         coordinate: [x, y],
-        scrollDirection: Number(raw.scroll_y ?? raw.deltaY ?? 0) >= 0 ? "down" : "up",
-        scrollAmount: Math.abs(Number(raw.scroll_y ?? raw.deltaY ?? 1)),
+        scrollDirection: dy >= 0 ? "down" : "up",
+        scrollAmount: amount,
       };
-    case "drag":
+    }
+    case "keypress": {
+      const keys = action.keys ?? [];
+      return { type: "key", text: keys.map(toPlaywrightKey).join("+") };
+    }
+    case "type":
+      return { type: "type", text: String(action.text ?? "") };
+    case "drag": {
+      const path = action.path ?? [];
+      const start = path[0];
+      const end = path[path.length - 1] ?? start;
       return {
         type: "left_click_drag",
-        startCoordinate: [
-          Number((raw.path as Array<{ x: number }> | undefined)?.[0]?.x ?? x),
-          Number((raw.path as Array<{ y: number }> | undefined)?.[0]?.y ?? y),
-        ],
-        coordinate: [x, y],
+        startCoordinate: start ? [start.x, start.y] : undefined,
+        coordinate: end ? [end.x, end.y] : [x, y],
       };
+    }
     case "wait":
-      return { type: "wait", ms: Number(raw.ms ?? 1000) };
+      return { type: "wait", ms: 1000 };
     default:
-      if (isComputerActionType(type)) return raw as unknown as ComputerAction;
+      if (isComputerActionType(String(action.type))) {
+        return action as unknown as ComputerAction;
+      }
       return null;
   }
 }
-
-// silence unused if tree-shaken
-void unsupported;

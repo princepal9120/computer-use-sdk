@@ -1,4 +1,4 @@
-import { chromium, type Browser, type Page } from "playwright";
+import { chromium, type Browser, type Locator, type Page } from "playwright";
 import { PlaywrightComputer } from "../../core/engine";
 import { unsupported } from "../../core/errors";
 import type { ComputerProvider, ComputerRuntime } from "../../core/provider";
@@ -64,31 +64,38 @@ export function agentql(options: AgentQLOptions = {}): ComputerProvider {
           switch (action.type) {
             case "extract": {
               if (action.url) await page.goto(action.url, { waitUntil: "domcontentloaded" });
-              try {
-                const data = await aql.queryData(action.query);
-                return { type: "json", data };
-              } catch {
-                return computer.extract(action.query);
+              // `extract.query` is natural language. AgentQL v1.18.1 exposes NO
+              // natural-language DATA method — `queryData`/`queryElements` require
+              // AgentQL query SYNTAX and throw on free text. The only NL primitive
+              // is `page.getByPrompt(prompt)`, which locates the element described
+              // by the prompt. Return that element's text content.
+              const locator = await aql.getByPrompt(action.query);
+              if (locator) {
+                const text =
+                  (await locator.innerText().catch(() => null))
+                  ?? (await locator.textContent().catch(() => null));
+                return {
+                  type: "json",
+                  data: { query: action.query, text: text?.trim() ?? "", source: "agentql" },
+                };
               }
+              // Explicit last resort: AgentQL located no matching element for the
+              // NL query. Fall back to plain DOM extraction (not a mask of a broken
+              // primary path — getByPrompt genuinely returned no element).
+              return computer.extract(action.query);
             }
             case "click": {
               if (action.selector || action.coordinate) {
                 return computer.clickTarget(action);
               }
-              // Natural language via queryElements
-              try {
-                const els = await aql.queryElements(action.text ?? "primary button");
-                const handle = Array.isArray(els) ? els[0] : els;
-                if (
-                  handle
-                  && typeof (handle as { click?: () => Promise<void> }).click === "function"
-                ) {
-                  await (handle as { click: () => Promise<void> }).click();
-                  return { type: "text", text: "Clicked via AgentQL" };
-                }
-              } catch {
-                // fall through
+              // Natural-language click via AgentQL's NL element locator.
+              const prompt = action.text ?? "primary button";
+              const locator = await aql.getByPrompt(prompt);
+              if (locator) {
+                await locator.click({ timeout: 15_000 });
+                return { type: "text", text: `Clicked via AgentQL: "${prompt}"` };
               }
+              // Last resort: Playwright text match when AgentQL finds nothing.
               if (action.text) return computer.clickTarget(action);
               return unsupported("agentql", "click");
             }
@@ -111,7 +118,21 @@ export function agentql(options: AgentQLOptions = {}): ComputerProvider {
   };
 }
 
+/**
+ * Minimal shape of AgentQL's wrapped Playwright page (`PageExt`) used here.
+ * `getByPrompt` is the natural-language element locator; `queryData` /
+ * `queryElements` require AgentQL query SYNTAX and are not used for NL input.
+ */
 interface AgentQLPage {
-  queryData: (query: string) => Promise<unknown>;
+  getByPrompt: (
+    prompt: string,
+    options?: {
+      timeout?: number;
+      waitForNetworkIdle?: boolean;
+      includeHidden?: boolean;
+      mode?: "standard" | "fast";
+    },
+  ) => Promise<Locator | null>;
+  queryData: (query: string) => Promise<Record<string, unknown>>;
   queryElements: (query: string) => Promise<unknown>;
 }

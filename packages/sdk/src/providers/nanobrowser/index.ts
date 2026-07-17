@@ -82,11 +82,18 @@ export function nanobrowser(options: NanobrowserOptions = {}): ComputerProvider 
           }
           if (!computer) return unsupported("nanobrowser", action.type);
           if (action.type === "agent") {
-            // experimental: navigate + screenshot only as stub when no remote agent
-            return {
-              type: "text",
-              text: `Nanobrowser local mode has no remote agent. Task: ${action.task}. Set NANOBROWSER_BASE_URL or use CDP.`,
-            };
+            // Nanobrowser is a Chrome extension; there is no verified REST agent
+            // endpoint. In local-fallback / CDP mode we drive the browser directly
+            // but cannot run an autonomous agent loop. Fail clearly instead of
+            // returning a stub so callers never mistake a placeholder for a real
+            // agent run.
+            throw new ComputerUseError({
+              code: "unsupported",
+              provider: "nanobrowser",
+              operation: "agent",
+              message:
+                "Nanobrowser agent runs require a configured remote backend. Set NANOBROWSER_BASE_URL (and NANOBROWSER_API_KEY) to a server exposing POST /api/agent. The local/CDP path supports browse and computer actions only.",
+            });
           }
           return runPlaywrightAction(computer, "nanobrowser", action);
         },

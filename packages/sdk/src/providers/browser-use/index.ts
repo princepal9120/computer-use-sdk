@@ -76,17 +76,13 @@ export function browserUse(
         });
         sessionId = session.id;
         createdHere = true;
-        const cdp =
-          (session as { cdpUrl?: string | null }).cdpUrl
-          ?? (session as { connectUrl?: string }).connectUrl;
-        if (cdp && !options.agentOnly) {
-          computer = await PlaywrightComputer.connect(cdp, display);
+        if (!options.agentOnly) {
+          const cdp = await resolveCdpUrl(client, sessionId, session);
+          if (cdp) computer = await PlaywrightComputer.connect(cdp, display);
         }
       } else if (!options.agentOnly) {
         const session = await client.browsers.get(sessionId);
-        const cdp =
-          (session as { cdpUrl?: string | null }).cdpUrl
-          ?? (session as { connectUrl?: string }).connectUrl;
+        const cdp = await resolveCdpUrl(client, sessionId, session);
         if (cdp) computer = await PlaywrightComputer.connect(cdp, display);
       }
 
@@ -136,17 +132,49 @@ export function browserUse(
   };
 }
 
+type BrowserUseSession = {
+  id: string;
+  cdpUrl?: string | null;
+  connectUrl?: string | null;
+};
+
+/** Awaited shape of `client.run()` (a `TaskRun<string>` resolving to a `TaskResult`). */
+type BrowserUseRunResult = string | { output?: string | null } | null;
+
 interface BrowserUseClientLike {
   browsers: {
-    create: (body?: Record<string, unknown>) => Promise<{ id: string; cdpUrl?: string | null }>;
-    get: (id: string) => Promise<{ id: string; cdpUrl?: string | null }>;
+    create: (body?: Record<string, unknown>) => Promise<BrowserUseSession>;
+    get: (id: string) => Promise<BrowserUseSession>;
     stop: (id: string) => Promise<unknown>;
   };
-  tasks?: {
-    createTask: (body: { task: string; maxSteps?: number }) => Promise<{ id: string }>;
-    getTask: (id: string) => Promise<{ status: string; output?: string | null; error?: string | null }>;
-  };
-  run?: (task: string, opts?: { maxSteps?: number }) => Promise<{ output?: string }>;
+  // v3 SDK: run(task, opts) returns a TaskRun<string> (a PromiseLike) that
+  // awaits to a TaskResult ({ ...TaskView, output: string }).
+  run?: (
+    task: string,
+    opts?: { maxSteps?: number },
+  ) => PromiseLike<BrowserUseRunResult>;
+}
+
+function extractCdpUrl(session: BrowserUseSession): string | undefined {
+  return session.cdpUrl ?? session.connectUrl ?? undefined;
+}
+
+/**
+ * The CDP URL may not be provisioned by the time create()/get() returns.
+ * Briefly poll the session until it appears so `computer` control can attach.
+ */
+async function resolveCdpUrl(
+  client: BrowserUseClientLike,
+  sessionId: string,
+  initial: BrowserUseSession,
+): Promise<string | undefined> {
+  let cdp = extractCdpUrl(initial);
+  for (let attempt = 0; attempt < 5 && !cdp; attempt++) {
+    await new Promise((r) => setTimeout(r, 500));
+    const refreshed = await client.browsers.get(sessionId);
+    cdp = extractCdpUrl(refreshed);
+  }
+  return cdp;
 }
 
 async function runAgentTask(
@@ -154,45 +182,26 @@ async function runAgentTask(
   task: string,
   maxSteps?: number,
 ): Promise<ToolResult> {
-  // Prefer high-level run() when present (v2 SDK)
-  if (typeof client.run === "function") {
-    const result = await client.run(task, { maxSteps });
-    return {
-      type: "text",
-      text: typeof result?.output === "string" ? result.output : JSON.stringify(result),
-    };
-  }
-  if (client.tasks?.createTask) {
-    const created = await client.tasks.createTask({ task, maxSteps });
-    // Simple poll
-    for (let i = 0; i < 120; i++) {
-      await new Promise((r) => setTimeout(r, 2000));
-      const status = await client.tasks.getTask(created.id);
-      if (status.status === "finished" || status.status === "stopped") {
-        return { type: "text", text: status.output ?? status.error ?? status.status };
-      }
-      if (status.status === "failed" || status.status === "error") {
-        throw new ComputerUseError({
-          code: "driver_error",
-          provider: "browser-use",
-          operation: "agent",
-          message: status.error ?? "agent task failed",
-        });
-      }
-    }
+  if (typeof client.run !== "function") {
     throw new ComputerUseError({
-      code: "timeout",
+      code: "unsupported",
       provider: "browser-use",
       operation: "agent",
-      message: "agent task timed out",
+      message: "browser-use-sdk has no run() API in this version",
     });
   }
-  throw new ComputerUseError({
-    code: "unsupported",
-    provider: "browser-use",
-    operation: "agent",
-    message: "browser-use-sdk has no run/tasks API in this version",
-  });
+  // Awaiting the TaskRun yields a TaskResult ({ ...TaskView, output: string }).
+  // Some builds resolve to a plain string instead — handle both, and only
+  // stringify genuinely non-string shapes (avoids quote-wrapping the answer).
+  const result = await client.run(
+    task,
+    maxSteps !== undefined ? { maxSteps } : undefined,
+  );
+  const output = typeof result === "string" ? result : result?.output;
+  return {
+    type: "text",
+    text: typeof output === "string" ? output : JSON.stringify(result),
+  };
 }
 
 function describeBrowseAsTask(action: ToolAction): string {

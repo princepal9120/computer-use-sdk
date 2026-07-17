@@ -1,4 +1,3 @@
-import type { Browser, Page } from "playwright";
 import { PlaywrightComputer } from "../../core/engine";
 import type { ComputerProvider, ComputerRuntime } from "../../core/provider";
 import type { Display, ToolAction, ToolResult } from "../../core/types";
@@ -20,8 +19,13 @@ export { stagehandCapabilities };
 
 /**
  * Stagehand (Browserbase) — AI-assisted browser framework.
- * Peer: `@browserbasehq/stagehand`.
- * Full computer + browse actions via Playwright; agent/extract via Stagehand AI.
+ * Peer: `@browserbasehq/stagehand` (v3).
+ *
+ * v3 no longer exposes `.page`/`.browser`. It runs a CDP-backed browser
+ * (local Chrome or Browserbase) and exposes `connectURL()` for the browser
+ * CDP endpoint plus a `context` with its own CDP pages. We connect Playwright
+ * over that CDP endpoint for direct/computer actions, and delegate high-level
+ * work (`agent`, `extract`, `act`) to Stagehand's AI methods.
  */
 export function stagehand(options: StagehandOptions = {}): ComputerProvider {
   return {
@@ -52,23 +56,34 @@ export function stagehand(options: StagehandOptions = {}): ComputerProvider {
       ).Stagehand;
       if (!Stagehand) throw new Error("@browserbasehq/stagehand missing Stagehand export");
 
-      const sh = new Stagehand({
+      const shOptions: Record<string, unknown> = {
         env,
         apiKey: options.apiKey ?? process.env.BROWSERBASE_API_KEY,
         projectId: options.projectId ?? process.env.BROWSERBASE_PROJECT_ID,
-        modelName: options.modelName ?? process.env.STAGEHAND_MODEL,
-        modelClientOptions: options.modelApiKey
-          ? { apiKey: options.modelApiKey }
-          : undefined,
-      });
+      };
+      const modelName = options.modelName ?? process.env.STAGEHAND_MODEL;
+      if (modelName) {
+        // v3 ModelConfiguration: a bare model id, or { modelName, apiKey, ... }.
+        shOptions.model = options.modelApiKey
+          ? { modelName, apiKey: options.modelApiKey }
+          : modelName;
+      }
+
+      const sh = new Stagehand(shOptions);
       await sh.init();
 
-      // Stagehand owns the browser lifecycle; attach without ownBrowser.
-      const page = sh.page as Page;
-      const browser = (page.context().browser() ?? sh.browser) as Browser | null;
-      const computer = browser
-        ? PlaywrightComputer.attach(browser, page, display, false)
-        : null;
+      // Stagehand owns the browser lifecycle. Connect Playwright over its CDP
+      // endpoint so direct/computer actions have a real browser + page.
+      let computer: PlaywrightComputer | null = null;
+      try {
+        const cdpUrl = sh.connectURL();
+        if (cdpUrl) computer = await PlaywrightComputer.connect(cdpUrl, display);
+      } catch {
+        computer = null;
+      }
+
+      const nativePage = (): StagehandNativePage | undefined =>
+        sh.context.activePage() ?? sh.context.pages()[0];
 
       const runtime: ComputerRuntime = {
         id: `stagehand-${crypto.randomUUID().slice(0, 8)}`,
@@ -78,11 +93,15 @@ export function stagehand(options: StagehandOptions = {}): ComputerProvider {
         async execute(action: ToolAction): Promise<ToolResult> {
           switch (action.type) {
             case "agent": {
-              const result = await sh.act(action.task);
+              // v3: agent({...}).execute(task) runs a multi-step AI agent.
+              const result = await sh.agent().execute(action.task);
               return { type: "json", data: result };
             }
             case "extract": {
-              if (action.url) await sh.page.goto(action.url);
+              if (action.url) {
+                if (computer) await computer.goto(action.url);
+                else await nativePage()?.goto(action.url);
+              }
               try {
                 const data = await sh.extract(action.query);
                 return { type: "json", data };
@@ -91,12 +110,8 @@ export function stagehand(options: StagehandOptions = {}): ComputerProvider {
                 throw new Error("Stagehand extract failed and no Playwright page attached");
               }
             }
-            case "click":
-              if (action.selector) {
-                await sh.page.click(action.selector);
-                return { type: "text", text: `Clicked ${action.selector}` };
-              }
-              if (action.coordinate && computer) {
+            case "click": {
+              if ((action.selector || action.coordinate) && computer) {
                 return computer.clickTarget(action);
               }
               if (action.text) {
@@ -110,14 +125,12 @@ export function stagehand(options: StagehandOptions = {}): ComputerProvider {
               }
               if (computer) return computer.clickTarget(action);
               throw new Error("click requires selector, text, or coordinate");
-            case "type":
-              if (action.selector) {
-                await sh.page.fill(action.selector, action.text);
-                return { type: "text", text: `Typed into ${action.selector}` };
-              }
-              if (computer) return computer.typeText(action.text);
+            }
+            case "type": {
+              if (computer) return computer.typeText(action.text, action.selector);
               await sh.act(`type ${JSON.stringify(action.text)}`);
               return { type: "text", text: "Typed" };
+            }
             default:
               if (computer) {
                 try {
@@ -136,11 +149,14 @@ export function stagehand(options: StagehandOptions = {}): ComputerProvider {
         },
         async screenshot() {
           if (computer) return computer.screenshot();
-          const buf = await sh.page.screenshot({ type: "png" });
+          const page = nativePage();
+          if (!page) throw new Error("stagehand: no page available for screenshot");
+          const buf = await page.screenshot();
           return Buffer.from(buf).toString("base64");
         },
         async stop() {
-          await sh.close();
+          if (computer) await computer.stop().catch(() => undefined);
+          await sh.close().catch(() => undefined);
         },
       };
       return runtime;
@@ -148,19 +164,31 @@ export function stagehand(options: StagehandOptions = {}): ComputerProvider {
   };
 }
 
+/** Stagehand v3 CDP-backed page (subset used by this adapter). */
+interface StagehandNativePage {
+  goto: (
+    url: string,
+    options?: { waitUntil?: string; timeoutMs?: number },
+  ) => Promise<unknown>;
+  screenshot: (options?: { type?: "png" | "jpeg" }) => Promise<Buffer>;
+}
+
+interface StagehandContext {
+  pages: () => StagehandNativePage[];
+  activePage: () => StagehandNativePage | undefined;
+}
+
+interface StagehandAgent {
+  execute: (task: string) => Promise<unknown>;
+}
+
+/** Local view of the v3 `Stagehand` (alias of `V3`) surface we use. */
 interface StagehandClient {
   init: () => Promise<void>;
-  close: () => Promise<void>;
+  close: (opts?: { force?: boolean }) => Promise<void>;
   act: (instruction: string) => Promise<unknown>;
   extract: (instruction: string) => Promise<unknown>;
-  browser?: Browser;
-  page: {
-    goto: (url: string) => Promise<unknown>;
-    click: (sel: string) => Promise<unknown>;
-    fill: (sel: string, text: string) => Promise<unknown>;
-    waitForSelector: (sel: string) => Promise<unknown>;
-    waitForTimeout: (ms: number) => Promise<unknown>;
-    screenshot: (o: { type: "png" }) => Promise<Buffer | Uint8Array>;
-    context: () => { browser: () => Browser | null };
-  };
+  agent: (options?: Record<string, unknown>) => StagehandAgent;
+  connectURL: () => string;
+  readonly context: StagehandContext;
 }

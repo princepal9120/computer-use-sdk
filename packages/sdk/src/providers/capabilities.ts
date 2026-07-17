@@ -116,16 +116,12 @@ export const skyvernCapabilities = defineCapabilities({
   "session.resume": "cloud",
 });
 
+// OpenHands' cloud REST contract is unverified without a live account, so the
+// adapter fails loudly rather than fabricating results. Advertise only the
+// surfaces it is, not actions it can't reliably perform.
 export const openhandsCapabilities = defineCapabilities({
-  "browse.agent": "agent",
-  "shell.run": "host",
-  "editor.view": "host",
-  "editor.create": "host",
-  "editor.str_replace": "host",
   "surface.browser": "full",
-  "surface.desktop": "partial",
   "surface.api": "api",
-  "vision.model": "vision",
 });
 
 export const stagehandCapabilities = defineCapabilities({
@@ -138,7 +134,6 @@ export const stagehandCapabilities = defineCapabilities({
 export const agentqlCapabilities = defineCapabilities({
   ...browserComputer,
   "browse.extract": "vision",
-  "vision.model": "vision",
   "surface.browser": "full",
   "surface.api": "api",
 });
@@ -150,11 +145,12 @@ export const midsceneCapabilities = defineCapabilities({
   "vision.model": "vision",
 });
 
+// Local/CDP fallback drives a real browser but has no agent loop or vision
+// model, so those are not advertised (the adapter throws a clear error if a
+// remote agent backend isn't configured).
 export const nanobrowserCapabilities = defineCapabilities({
   ...browserComputer,
   "browse.extract": "browser",
-  "browse.agent": "agent",
-  "vision.model": "vision",
 });
 
 export const playwrightMcpCapabilities = defineCapabilities({

@@ -12,3 +12,4 @@ coverage
 compatibility/results
 *.tgz
 .vercel
+launch-assets

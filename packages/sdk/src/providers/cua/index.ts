@@ -18,27 +18,41 @@ export interface CuaOptions {
 
 export { cuaCapabilities };
 
+type CuaButton = "left" | "middle" | "right";
+
+/**
+ * Minimal local view of `@trycua/computer`'s `BaseComputerInterface`
+ * (not exported from the package). Signatures mirror v0.1.6.
+ */
 type CuaInterface = {
   waitForReady: (timeout?: number) => Promise<void>;
   screenshot: () => Promise<Buffer>;
   leftClick: (x?: number, y?: number) => Promise<void>;
-  rightClick?: (x?: number, y?: number) => Promise<void>;
-  doubleClick?: (x?: number, y?: number) => Promise<void>;
+  rightClick: (x?: number, y?: number) => Promise<void>;
+  doubleClick: (x?: number, y?: number) => Promise<void>;
   moveCursor: (x: number, y: number) => Promise<void>;
   typeText: (text: string) => Promise<void>;
-  key?: (key: string) => Promise<void>;
-  pressKey?: (key: string) => Promise<void>;
-  scrollUp?: (clicks?: number) => Promise<void>;
-  scrollDown?: (clicks?: number) => Promise<void>;
-  drag?: (start: [number, number], end: [number, number]) => Promise<void>;
-  runCommand?: (cmd: string) => Promise<{ stdout?: string; stderr?: string; output?: string }>;
-  close?: () => Promise<void>;
-  forceClose?: () => Promise<void>;
+  pressKey: (key: string) => Promise<void>;
+  hotkey: (...keys: string[]) => Promise<void>;
+  scrollUp: (clicks?: number) => Promise<void>;
+  scrollDown: (clicks?: number) => Promise<void>;
+  drag: (
+    path: Array<[number, number]>,
+    button?: CuaButton,
+    duration?: number,
+  ) => Promise<void>;
+  // runCommand returns a [stdout, stderr] tuple in v0.1.6.
+  runCommand?: (command: string) => Promise<[string, string]>;
+  disconnect: () => void;
+  forceClose: () => void;
 };
 
+/** Local view of `CloudComputer` (exported as `Computer`) in v0.1.6. */
 type CuaComputer = {
-  run: () => Promise<CuaInterface>;
+  run: () => Promise<void>;
+  stop: () => Promise<void>;
   disconnect: () => Promise<void>;
+  readonly interface: CuaInterface;
 };
 
 /**
@@ -80,7 +94,9 @@ export function cua(options: CuaOptions = {}): ComputerProvider<CuaInterface> {
         apiKey,
       });
 
-      const iface = await computer.run();
+      // v0.1.6: run() resolves to void; the control interface is a getter.
+      await computer.run();
+      const iface = computer.interface;
       await iface.waitForReady(120);
 
       const runtime: ComputerRuntime<CuaInterface> = {
@@ -95,10 +111,8 @@ export function cua(options: CuaOptions = {}): ComputerProvider<CuaInterface> {
           switch (action.type) {
             case "bash": {
               if (!iface.runCommand) return unsupported("cua", "bash");
-              const result = await iface.runCommand(action.command);
-              const text =
-                result.output
-                ?? `${result.stdout ?? ""}${result.stderr ? `\n[stderr]\n${result.stderr}` : ""}`;
+              const [stdout, stderr] = await iface.runCommand(action.command);
+              const text = `${stdout ?? ""}${stderr ? `\n[stderr]\n${stderr}` : ""}`;
               return { type: "text", text: text.trim() || "(no output)" };
             }
             default:
@@ -110,7 +124,15 @@ export function cua(options: CuaOptions = {}): ComputerProvider<CuaInterface> {
           return Buffer.from(buf).toString("base64");
         },
         async stop() {
-          await iface.close?.().catch(() => iface.forceClose?.());
+          try {
+            iface.disconnect();
+          } catch {
+            try {
+              iface.forceClose();
+            } catch {
+              // best-effort teardown
+            }
+          }
           await computer.disconnect().catch(() => undefined);
         },
       };
@@ -139,40 +161,34 @@ async function runComputer(iface: CuaInterface, action: ToolAction): Promise<Too
       await iface.leftClick(action.coordinate?.[0], action.coordinate?.[1]);
       return { type: "text", text: "Left click" };
     case "right_click":
-      if (!iface.rightClick) return unsupported("cua", "right_click");
       await iface.rightClick(action.coordinate?.[0], action.coordinate?.[1]);
       return { type: "text", text: "Right click" };
     case "double_click":
-      if (!iface.doubleClick) {
-        await iface.leftClick(action.coordinate?.[0], action.coordinate?.[1]);
-        await iface.leftClick(action.coordinate?.[0], action.coordinate?.[1]);
-      } else {
-        await iface.doubleClick(action.coordinate?.[0], action.coordinate?.[1]);
-      }
+      await iface.doubleClick(action.coordinate?.[0], action.coordinate?.[1]);
       return { type: "text", text: "Double click" };
     case "mouse_scroll":
       if (action.scrollDirection === "up") {
-        await iface.scrollUp?.(action.scrollAmount ?? 1);
+        await iface.scrollUp(action.scrollAmount ?? 1);
       } else {
-        await iface.scrollDown?.(action.scrollAmount ?? 1);
+        await iface.scrollDown(action.scrollAmount ?? 1);
       }
       return { type: "text", text: `Scrolled ${action.scrollDirection}` };
-    case "left_click_drag":
-      if (!iface.drag) return unsupported("cua", "left_click_drag");
+    case "left_click_drag": {
+      const start = action.startCoordinate ?? action.coordinate;
+      const end = action.coordinate;
+      // v0.1.6: drag(path, button?, duration?) — build a 2-point path.
       await iface.drag(
-        action.startCoordinate ?? action.coordinate,
-        action.coordinate,
+        [
+          [start[0], start[1]],
+          [end[0], end[1]],
+        ],
+        "left",
       );
       return { type: "text", text: "Drag" };
-    case "key": {
-      const press = iface.key ?? iface.pressKey;
-      if (!press) {
-        await iface.typeText(action.text);
-      } else {
-        await press.call(iface, action.text);
-      }
-      return { type: "text", text: `Pressed key: ${action.text}` };
     }
+    case "key":
+      await iface.pressKey(action.text);
+      return { type: "text", text: `Pressed key: ${action.text}` };
     case "middle_click":
     case "triple_click":
       return unsupported("cua", action.type);
