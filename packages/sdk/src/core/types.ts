@@ -4,6 +4,17 @@ export const providerNames = [
   "browser-use",
   "cua",
   "firecrawl",
+  "openai",
+  "anthropic",
+  "steel",
+  "hyperbrowser",
+  "skyvern",
+  "openhands",
+  "stagehand",
+  "agentql",
+  "midscene",
+  "nanobrowser",
+  "playwright-mcp",
 ] as const;
 export type ProviderName = (typeof providerNames)[number];
 
@@ -18,6 +29,7 @@ export const capabilityNames = [
   "browse.type",
   "browse.wait",
   "browse.agent",
+  "browse.extract",
   "scrape.page",
   "scrape.crawl",
   "scrape.map",
@@ -29,6 +41,10 @@ export const capabilityNames = [
   "editor.insert",
   "display.configurable",
   "session.resume",
+  "vision.model",
+  "surface.browser",
+  "surface.desktop",
+  "surface.api",
 ] as const;
 
 export type Capability = (typeof capabilityNames)[number];
@@ -40,6 +56,9 @@ export type CapabilityMode =
   | "desktop"
   | "cloud"
   | "agent"
+  | "vision"
+  | "api"
+  | "partial"
   | "none";
 
 export type CapabilityMap = Readonly<Record<Capability, false | CapabilityMode>>;
@@ -66,13 +85,14 @@ export type ComputerAction =
     }
   | { type: "key"; text: string };
 
-/** High-level browser actions (browser-use style). */
+/** High-level browser actions (browser-use / stagehand / midscene style). */
 export type BrowseAction =
   | { type: "goto"; url: string }
   | { type: "click"; selector?: string; text?: string; coordinate?: [number, number] }
   | { type: "type"; text: string; selector?: string }
   | { type: "wait"; ms?: number; selector?: string }
-  | { type: "agent"; task: string; maxSteps?: number };
+  | { type: "agent"; task: string; maxSteps?: number }
+  | { type: "extract"; query: string; url?: string };
 
 /** Firecrawl-style scrape/crawl/search. */
 export type ScrapeAction =

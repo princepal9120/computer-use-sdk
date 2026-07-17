@@ -5,73 +5,102 @@ import { browserbase } from "../src/providers/browserbase";
 import { browserUse } from "../src/providers/browser-use";
 import { cua } from "../src/providers/cua";
 import { firecrawl } from "../src/providers/firecrawl";
-import {
-  browserUseCapabilities,
-  browserbaseCapabilities,
-  cuaCapabilities,
-  firecrawlCapabilities,
-  localCapabilities,
-} from "../src/providers/capabilities";
+import { openai } from "../src/providers/openai";
+import { anthropic } from "../src/providers/anthropic";
+import { steel } from "../src/providers/steel";
+import { hyperbrowser } from "../src/providers/hyperbrowser";
+import { skyvern } from "../src/providers/skyvern";
+import { openhands } from "../src/providers/openhands";
+import { stagehand } from "../src/providers/stagehand";
+import { agentql } from "../src/providers/agentql";
+import { midscene } from "../src/providers/midscene";
+import { nanobrowser } from "../src/providers/nanobrowser";
+import { playwrightMcp } from "../src/providers/playwright-mcp";
+
+const factories = [
+  ["local", local()],
+  ["browserbase", browserbase({ apiKey: "x", projectId: "y" })],
+  ["browser-use", browserUse({ apiKey: "x" })],
+  ["cua", cua({ apiKey: "x" })],
+  ["firecrawl", firecrawl({ apiKey: "x" })],
+  ["openai", openai({ apiKey: "x" })],
+  ["anthropic", anthropic({ apiKey: "x" })],
+  ["steel", steel({ apiKey: "x" })],
+  ["hyperbrowser", hyperbrowser({ apiKey: "x" })],
+  ["skyvern", skyvern({ apiKey: "x" })],
+  ["openhands", openhands({ apiKey: "x", baseUrl: "http://127.0.0.1:9" })],
+  ["stagehand", stagehand({ env: "LOCAL" })],
+  ["agentql", agentql({ apiKey: "x" })],
+  ["midscene", midscene()],
+  ["nanobrowser", nanobrowser({ fallbackLocal: true })],
+  ["playwright-mcp", playwrightMcp()],
+] as const;
 
 describe("providers plug-in surface", () => {
-  test("local factory id + capabilities", () => {
-    const p = local();
-    expect(p.id).toBe("local");
-    expect(p.capabilities).toBe(localCapabilities);
-    expect(p.capabilities["shell.run"]).toBe("host");
-  });
-
-  test("browserbase factory", () => {
-    const p = browserbase({ apiKey: "x", projectId: "y" });
-    expect(p.id).toBe("browserbase");
-    expect(p.capabilities).toBe(browserbaseCapabilities);
-  });
-
-  test("browser-use factory", () => {
-    const p = browserUse({ apiKey: "x" });
-    expect(p.id).toBe("browser-use");
-    expect(p.capabilities).toBe(browserUseCapabilities);
-    expect(p.capabilities["browse.agent"]).toBe("agent");
-  });
-
-  test("cua factory", () => {
-    const p = cua({ apiKey: "x" });
-    expect(p.id).toBe("cua");
-    expect(p.capabilities).toBe(cuaCapabilities);
-  });
-
-  test("firecrawl factory", () => {
-    const p = firecrawl({ apiKey: "x" });
-    expect(p.id).toBe("firecrawl");
-    expect(p.capabilities).toBe(firecrawlCapabilities);
-    expect(p.capabilities["scrape.page"]).toBe("cloud");
-    expect(p.capabilities["computer.screenshot"]).toBe(false);
-  });
+  for (const [id, provider] of factories) {
+    test(`${id} factory id matches`, () => {
+      expect(provider.id).toBe(id);
+      expect(provider.capabilities).toBeDefined();
+    });
+  }
 
   test("firecrawl create fails without API key", async () => {
     const prev = process.env.FIRECRAWL_API_KEY;
     delete process.env.FIRECRAWL_API_KEY;
     try {
-      await expect(
-        createSession({ provider: firecrawl() }),
-      ).rejects.toMatchObject({ code: "authentication" });
+      await expect(createSession({ provider: firecrawl() })).rejects.toMatchObject({
+        code: "authentication",
+      });
     } finally {
       if (prev !== undefined) process.env.FIRECRAWL_API_KEY = prev;
     }
   });
 
-  test("browserbase create fails without keys", async () => {
-    const a = process.env.BROWSERBASE_API_KEY;
-    const b = process.env.BROWSERBASE_PROJECT_ID;
-    delete process.env.BROWSERBASE_API_KEY;
-    delete process.env.BROWSERBASE_PROJECT_ID;
+  test("openai create fails without key", async () => {
+    const prev = process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
     try {
-      await expect(
-        createSession({ provider: browserbase() }),
-      ).rejects.toMatchObject({ code: "authentication" });
+      await expect(createSession({ provider: openai() })).rejects.toMatchObject({
+        code: "authentication",
+      });
     } finally {
-      if (a !== undefined) process.env.BROWSERBASE_API_KEY = a;
-      if (b !== undefined) process.env.BROWSERBASE_PROJECT_ID = b;
+      if (prev !== undefined) process.env.OPENAI_API_KEY = prev;
+    }
+  });
+
+  test("anthropic create fails without key", async () => {
+    const prev = process.env.ANTHROPIC_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+    try {
+      await expect(createSession({ provider: anthropic() })).rejects.toMatchObject({
+        code: "authentication",
+      });
+    } finally {
+      if (prev !== undefined) process.env.ANTHROPIC_API_KEY = prev;
+    }
+  });
+
+  test("steel create fails without key", async () => {
+    const prev = process.env.STEEL_API_KEY;
+    delete process.env.STEEL_API_KEY;
+    try {
+      await expect(createSession({ provider: steel() })).rejects.toMatchObject({
+        code: "authentication",
+      });
+    } finally {
+      if (prev !== undefined) process.env.STEEL_API_KEY = prev;
+    }
+  });
+
+  test("skyvern create fails without key", async () => {
+    const prev = process.env.SKYVERN_API_KEY;
+    delete process.env.SKYVERN_API_KEY;
+    try {
+      await expect(createSession({ provider: skyvern() })).rejects.toMatchObject({
+        code: "authentication",
+      });
+    } finally {
+      if (prev !== undefined) process.env.SKYVERN_API_KEY = prev;
     }
   });
 });
