@@ -1,6 +1,6 @@
 {
   "name": "computer-use-sdk",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "One TypeScript API for computer-use and browser-use: createSession + session.run across 16 providers (Playwright, OpenAI, Anthropic, Browserbase, and more).",
   "homepage": "https://computer-use-sdk.vercel.app",
   "license": "MIT",
