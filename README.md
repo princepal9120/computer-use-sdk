@@ -10,15 +10,15 @@
 ## Install
 
 ```bash
-bun add @opencoredev/computer-use-sdk
+bun add @prince/computer-use-sdk
 # install only the peers you plug in (see matrix)
 ```
 
 ## Quickstart
 
 ```ts
-import { createSession } from "@opencoredev/computer-use-sdk";
-import { local } from "@opencoredev/computer-use-sdk/local";
+import { createSession } from "@prince/computer-use-sdk";
+import { local } from "@prince/computer-use-sdk/local";
 
 await using session = await createSession({ provider: local() });
 await session.run({ type: "goto", url: "https://example.com" });
@@ -31,7 +31,7 @@ await session.screenshot();
 
 | SDK | Browser | Desktop | API | Import |
 | --- | --- | --- | --- | --- |
-| **TryCUA** | ✅ | ✅ | ✅ | `@opencoredev/computer-use-sdk/cua` |
+| **TryCUA** | ✅ | ✅ | ✅ | `@prince/computer-use-sdk/cua` |
 | **OpenAI Computer Use** | ✅ | ✅ | ✅ | `.../openai` |
 | **Anthropic Computer Use** | ✅ | ✅ | ✅ | `.../anthropic` |
 | **Browserbase** | ✅ | ❌ | ✅ | `.../browserbase` |
@@ -55,14 +55,14 @@ await session.screenshot();
 Also: **Local** (bundled Playwright) · **Firecrawl** (scrape API).
 
 ```ts
-import { browserbase } from "@opencoredev/computer-use-sdk/browserbase";
-import { openai } from "@opencoredev/computer-use-sdk/openai";
-import { anthropic } from "@opencoredev/computer-use-sdk/anthropic";
-import { steel } from "@opencoredev/computer-use-sdk/steel";
-import { hyperbrowser } from "@opencoredev/computer-use-sdk/hyperbrowser";
-import { skyvern } from "@opencoredev/computer-use-sdk/skyvern";
-import { stagehand } from "@opencoredev/computer-use-sdk/stagehand";
-import { midscene } from "@opencoredev/computer-use-sdk/midscene";
+import { browserbase } from "@prince/computer-use-sdk/browserbase";
+import { openai } from "@prince/computer-use-sdk/openai";
+import { anthropic } from "@prince/computer-use-sdk/anthropic";
+import { steel } from "@prince/computer-use-sdk/steel";
+import { hyperbrowser } from "@prince/computer-use-sdk/hyperbrowser";
+import { skyvern } from "@prince/computer-use-sdk/skyvern";
+import { stagehand } from "@prince/computer-use-sdk/stagehand";
+import { midscene } from "@prince/computer-use-sdk/midscene";
 // …same createSession({ provider }) for all
 ```
 

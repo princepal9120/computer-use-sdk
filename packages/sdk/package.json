@@ -1,5 +1,5 @@
 {
-  "name": "@opencoredev/computer-use-sdk",
+  "name": "@prince/computer-use-sdk",
   "version": "0.2.0",
   "description": "One TypeScript SDK for computer-use: Local, Browserbase, Browser Use, CUA, OpenAI, Anthropic, Steel, Hyperbrowser, Skyvern, OpenHands, Stagehand, AgentQL, Midscene, Nanobrowser, Playwright MCP, Firecrawl.",
   "homepage": "https://computer-use-sdk.vercel.app",

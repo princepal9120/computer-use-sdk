@@ -28,7 +28,7 @@
       },
     },
     "packages/sdk": {
-      "name": "@opencoredev/computer-use-sdk",
+      "name": "@prince/computer-use-sdk",
       "version": "0.2.0",
       "dependencies": {
         "playwright": "^1.61.1",
@@ -239,7 +239,7 @@
 
     "@next/swc-win32-x64-msvc": ["@next/swc-win32-x64-msvc@15.5.20", "", { "os": "win32", "cpu": "x64" }, "sha512-T/L7CXpR1M0wij/xbF3rT1+7KvSkfOLr7C+ToHHWZTG2eKmb52C5WvsyGCBNtkVvDEUESWkRUbbqSH4rSbOCYQ=="],
 
-    "@opencoredev/computer-use-sdk": ["@opencoredev/computer-use-sdk@workspace:packages/sdk"],
+    "@prince/computer-use-sdk": ["@prince/computer-use-sdk@workspace:packages/sdk"],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
 

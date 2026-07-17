@@ -28,7 +28,7 @@ function Cell({ ok }: { ok: boolean | string }) {
 export default function HomePage() {
   return (
     <main>
-      <div className="badge">@opencoredev/computer-use-sdk · 16 providers · MIT</div>
+      <div className="badge">@prince/computer-use-sdk · 16 providers · MIT</div>
       <h1>One API for every computer-use stack</h1>
       <p className="lead">
         Local, cloud browsers, desktop sandboxes, vision agents, and scrape —
@@ -44,7 +44,7 @@ export default function HomePage() {
         </a>
         <a
           className="btn btn-ghost"
-          href="https://www.npmjs.com/package/@opencoredev/computer-use-sdk"
+          href="https://www.npmjs.com/package/@prince/computer-use-sdk"
         >
           npm
         </a>
@@ -119,8 +119,8 @@ export default function HomePage() {
       </div>
 
       <h2>Quickstart</h2>
-      <pre>{`import { createSession } from "@opencoredev/computer-use-sdk";
-import { openai } from "@opencoredev/computer-use-sdk/openai";
+      <pre>{`import { createSession } from "@prince/computer-use-sdk";
+import { openai } from "@prince/computer-use-sdk/openai";
 // or: anthropic | browserbase | steel | hyperbrowser | browserUse
 //     | skyvern | stagehand | midscene | agentql | cua | local …
 
@@ -128,9 +128,7 @@ await using session = await createSession({ provider: openai() });
 await session.run({ type: "agent", task: "Open example.com and list links" });`}</pre>
 
       <footer>
-        Modeled on{" "}
-        <a href="https://github.com/opencoredev/sandbox-sdk">sandbox-sdk</a> /{" "}
-        <a href="https://github.com/opencoredev/email-sdk">email-sdk</a>.
+        Built by Prince · MIT · plug any computer-use provider in or out.
       </footer>
     </main>
   );
