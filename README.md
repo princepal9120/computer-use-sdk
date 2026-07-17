@@ -68,6 +68,14 @@ bun run build
 - `packages/sdk` — `@opencoredev/computer-use-sdk`
 - `apps/web` — docs / landing (Vercel)
 
+## Links
+
+- Repo: https://github.com/princepal9120/computer-use-sdk
+- Site: https://computer-use-sdk.vercel.app
+- Package: `@opencoredev/computer-use-sdk` (publish when ready)
+
+> Modeled after [email-sdk](https://github.com/opencoredev/email-sdk) + [sandbox-sdk](https://github.com/opencoredev/sandbox-sdk). Transfer into `opencoredev/` when org write access is available.
+
 ## License
 
-[MIT](./LICENSE) © OpenCore
+[MIT](./LICENSE)

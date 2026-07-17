@@ -2,11 +2,11 @@
   "name": "@opencoredev/computer-use-sdk",
   "version": "0.1.0",
   "description": "One TypeScript SDK for computer-use, browser automation, and web scraping providers.",
-  "homepage": "https://github.com/opencoredev/computer-use-sdk",
+  "homepage": "https://computer-use-sdk.vercel.app",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/opencoredev/computer-use-sdk.git",
+    "url": "git+https://github.com/princepal9120/computer-use-sdk.git",
     "directory": "packages/sdk"
   },
   "files": [

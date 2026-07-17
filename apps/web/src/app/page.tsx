@@ -34,7 +34,7 @@ export default function HomePage() {
       <div className="row">
         <a
           className="btn btn-primary"
-          href="https://github.com/opencoredev/computer-use-sdk"
+          href="https://github.com/princepal9120/computer-use-sdk"
         >
           GitHub
         </a>
