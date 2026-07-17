@@ -1,21 +1,26 @@
+import type { Metadata } from "next";
 import { ArrowRight, ArrowUpRight } from "@/components/ui/icons";
 import { CodeBlock } from "@/components/ui/code-block";
 import { InlineCode } from "@/components/ui/inline-code";
 import { Callout } from "@/components/ui/callout";
 import { CardLink } from "@/components/ui/card-link";
+import { JsonLd } from "@/components/seo/json-ld";
 import { site } from "@/lib/site";
+import { buildMetadata, docsJsonLd, pages } from "@/lib/seo";
 import { matrix, peers, type Cap } from "@/lib/providers";
 
-const quickstart = `import { createSession } from "@prince/computer-use-sdk";
-import { local } from "@prince/computer-use-sdk/local";
+export const metadata: Metadata = buildMetadata(pages.docs);
+
+const quickstart = `import { createSession } from "computer-use-sdk";
+import { local } from "computer-use-sdk/local";
 
 await using session = await createSession({ provider: local() });
 await session.run({ type: "goto", url: "https://example.com" });
 await session.screenshot();`;
 
-const multiProvider = `import { createSession } from "@prince/computer-use-sdk";
-import { browserbase } from "@prince/computer-use-sdk/browserbase";
-import { openai } from "@prince/computer-use-sdk/openai";
+const multiProvider = `import { createSession } from "computer-use-sdk";
+import { browserbase } from "computer-use-sdk/browserbase";
+import { openai } from "computer-use-sdk/openai";
 
 // cloud browser session
 await using browser = await createSession({
@@ -99,7 +104,7 @@ function MatrixTable({
                 {rowCells(r)}
                 <td className="px-4 py-3">
                   <code className="rounded-md border border-edge bg-bg px-1.5 py-0.5 font-mono text-[11px] text-muted">
-                    {r.pkg.replace("@prince/computer-use-sdk", ".../")}
+                    {r.pkg.replace("computer-use-sdk", ".../")}
                   </code>
                 </td>
               </tr>
@@ -114,6 +119,7 @@ function MatrixTable({
 export default function DocsPage() {
   return (
     <article className="text-fg">
+      <JsonLd data={docsJsonLd()} />
       <div className="mb-4 flex items-center gap-2 text-sm text-muted">
         <span>Docs</span>
         <span className="text-muted/50">/</span>
@@ -252,7 +258,7 @@ export default function DocsPage() {
                 <td className="px-4 py-3"><CapCell cap={r.vision} /></td>
                 <td className="px-4 py-3">
                   <code className="rounded-md border border-edge bg-bg px-1.5 py-0.5 font-mono text-[11px] text-muted">
-                    {r.pkg.replace("@prince/computer-use-sdk", ".../")}
+                    {r.pkg.replace("computer-use-sdk", ".../")}
                   </code>
                 </td>
               </tr>

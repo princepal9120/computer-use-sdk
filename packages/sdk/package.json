@@ -1,15 +1,40 @@
 {
-  "name": "@prince/computer-use-sdk",
-  "version": "0.2.0",
-  "description": "One TypeScript SDK for computer-use: Local, Browserbase, Browser Use, CUA, OpenAI, Anthropic, Steel, Hyperbrowser, Skyvern, OpenHands, Stagehand, AgentQL, Midscene, Nanobrowser, Playwright MCP, Firecrawl.",
+  "name": "computer-use-sdk",
+  "version": "0.2.2",
+  "description": "One TypeScript API for computer-use and browser-use: createSession + session.run across 16 providers (Playwright, OpenAI, Anthropic, Browserbase, and more).",
   "homepage": "https://computer-use-sdk.vercel.app",
   "license": "MIT",
+  "keywords": [
+    "computer-use",
+    "computer-use-sdk",
+    "browser-use",
+    "browser-agent",
+    "browser-automation",
+    "playwright",
+    "openai",
+    "anthropic",
+    "browserbase",
+    "cua",
+    "typescript",
+    "sdk",
+    "agent",
+    "desktop-agent",
+    "createSession"
+  ],
+  "bugs": {
+    "url": "https://github.com/princepal9120/computer-use-sdk/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/princepal9120/computer-use-sdk.git",
     "directory": "packages/sdk"
   },
-  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -136,17 +161,39 @@
     "steel-sdk": ">=0.10.0"
   },
   "peerDependenciesMeta": {
-    "@anthropic-ai/sdk": { "optional": true },
-    "@browserbasehq/sdk": { "optional": true },
-    "@browserbasehq/stagehand": { "optional": true },
-    "@hyperbrowser/sdk": { "optional": true },
-    "@mendable/firecrawl-js": { "optional": true },
-    "@midscene/web": { "optional": true },
-    "@trycua/computer": { "optional": true },
-    "agentql": { "optional": true },
-    "browser-use-sdk": { "optional": true },
-    "openai": { "optional": true },
-    "steel-sdk": { "optional": true }
+    "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "@browserbasehq/sdk": {
+      "optional": true
+    },
+    "@browserbasehq/stagehand": {
+      "optional": true
+    },
+    "@hyperbrowser/sdk": {
+      "optional": true
+    },
+    "@mendable/firecrawl-js": {
+      "optional": true
+    },
+    "@midscene/web": {
+      "optional": true
+    },
+    "@trycua/computer": {
+      "optional": true
+    },
+    "agentql": {
+      "optional": true
+    },
+    "browser-use-sdk": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    },
+    "steel-sdk": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=22 <26"

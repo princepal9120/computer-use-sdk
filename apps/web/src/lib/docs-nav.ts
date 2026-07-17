@@ -11,6 +11,7 @@ export const docsNav: NavGroup[] = [
       { label: "Overview", href: "/docs" },
       { label: "Quickstart", href: "#quickstart" },
       { label: "Install", href: "#install" },
+      { label: "FAQ", href: "/faq" },
       { label: "Peers", href: "#peers", external: true },
     ],
   },
@@ -35,7 +36,7 @@ export const docsNav: NavGroup[] = [
     title: "Reference",
     items: [
       { label: "GitHub", href: "https://github.com/princepal9120/computer-use-sdk", external: true },
-      { label: "npm", href: "https://www.npmjs.com/package/@prince/computer-use-sdk", external: true },
+      { label: "npm", href: "https://www.npmjs.com/package/computer-use-sdk", external: true },
     ],
   },
 ];

@@ -1,10 +1,10 @@
-# @prince/computer-use-sdk
+# computer-use-sdk
 
 Unified computer-use session API. **16 providers** — plug in/out via subpath imports.
 
 ```ts
-import { createSession } from "@prince/computer-use-sdk";
-import { anthropic } from "@prince/computer-use-sdk/anthropic";
+import { createSession } from "computer-use-sdk";
+import { anthropic } from "computer-use-sdk/anthropic";
 
 await using session = await createSession({ provider: anthropic() });
 await session.run({ type: "agent", task: "Open example.com and summarize the hero" });

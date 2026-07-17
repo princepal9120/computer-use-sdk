@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
+import { site } from "@/lib/site";
+import { pages, seoKeywords } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,13 +21,17 @@ const geistMono = Geist_Mono({
 const themeScript = `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://computer-use-sdk.vercel.app"),
+  metadataBase: new URL(site.url),
   title: {
-    default: "Computer Use SDK - one API for every computer-use stack",
-    template: "%s - Computer Use SDK",
+    default: pages.home.title,
+    template: `%s - ${site.name}`,
   },
-  description:
-    "One TypeScript API for computer-use, browser agents, desktops, and scrape. Plug any provider in, swap one import.",
+  description: pages.home.description,
+  keywords: [...seoKeywords],
+  authors: [{ name: site.org, url: site.github }],
+  creator: site.org,
+  publisher: site.name,
+  category: "technology",
   // favicon.ico, icon.png, apple-icon.png live in app/ (same brand mark as nav/footer)
   icons: {
     icon: [
@@ -36,17 +42,40 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
   },
   openGraph: {
-    title: "Computer Use SDK - one API for every computer-use stack",
-    description:
-      "One createSession and session.run across local browsers, cloud agents, desktops, vision, and scrape.",
-    url: "https://computer-use-sdk.vercel.app",
-    siteName: "Computer Use SDK",
+    title: pages.home.title,
+    description: pages.home.description,
+    url: site.url,
+    siteName: site.name,
     type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: site.name,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Computer Use SDK",
-    description: "One API for every computer-use stack.",
+    title: site.name,
+    description: site.tagline,
+    images: ["/og.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  alternates: {
+    canonical: site.url,
   },
 };
 

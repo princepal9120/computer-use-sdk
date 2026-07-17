@@ -2,8 +2,8 @@ import { CodeBlock } from "@/components/ui/code-block";
 import { InlineCode } from "@/components/ui/inline-code";
 import { Reveal } from "@/components/landing/reveal";
 
-const quickstart = `import { createSession } from "@prince/computer-use-sdk";
-import { local } from "@prince/computer-use-sdk/local";
+const quickstart = `import { createSession } from "computer-use-sdk";
+import { local } from "computer-use-sdk/local";
 
 await using session = await createSession({ provider: local() });
 await session.run({ type: "goto", url: "https://example.com" });

@@ -1,0 +1,9 @@
+/** Inject a JSON-LD block for search engines (static-export safe). */
+export function JsonLd({ data }: { data: Record<string, unknown> | object }) {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}

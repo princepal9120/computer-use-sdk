@@ -46,7 +46,7 @@ function CapPills({ row }: { row: MatrixRow }) {
 }
 
 function ProviderCard({ row }: { row: MatrixRow }) {
-  const short = row.pkg.replace("@prince/computer-use-sdk/", "");
+  const short = row.pkg.replace("computer-use-sdk/", "");
   return (
     <li className="min-w-0">
       <div className="group flex h-full flex-col rounded-xl border border-edge bg-surface p-4 transition-colors hover:border-fg/15 hover:bg-bg">

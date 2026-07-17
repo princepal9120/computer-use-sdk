@@ -8,7 +8,7 @@ import { demoProviders } from "@/lib/providers";
 import { cn } from "@/lib/cn";
 
 function codeFor(p: (typeof demoProviders)[number]) {
-  return `import { createSession } from "@prince/computer-use-sdk";
+  return `import { createSession } from "computer-use-sdk";
 import { ${p.factory} } from "${p.importFrom}";
 
 await using session = await createSession({ provider: ${p.config} });

@@ -10,15 +10,15 @@
 ## Install
 
 ```bash
-bun add @prince/computer-use-sdk
+bun add computer-use-sdk
 # install only the peers you plug in (see matrix)
 ```
 
 ## Quickstart
 
 ```ts
-import { createSession } from "@prince/computer-use-sdk";
-import { local } from "@prince/computer-use-sdk/local";
+import { createSession } from "computer-use-sdk";
+import { local } from "computer-use-sdk/local";
 
 await using session = await createSession({
   provider: local({ headless: true }),
@@ -49,7 +49,7 @@ Same `createSession({ provider })` surface works across all 16 providers — swa
 
 | SDK | Browser | Desktop | API | Import |
 | --- | --- | --- | --- | --- |
-| **TryCUA** | ✅ | ✅ | ✅ | `@prince/computer-use-sdk/cua` |
+| **TryCUA** | ✅ | ✅ | ✅ | `computer-use-sdk/cua` |
 | **OpenAI Computer Use** | ✅ | ✅ | ✅ | `.../openai` |
 | **Anthropic Computer Use** | ✅ | ✅ | ✅ | `.../anthropic` |
 | **Browserbase** | ✅ | ❌ | ✅ | `.../browserbase` |
@@ -73,14 +73,14 @@ Same `createSession({ provider })` surface works across all 16 providers — swa
 Also: **Local** (bundled Playwright) · **Firecrawl** (scrape API).
 
 ```ts
-import { browserbase } from "@prince/computer-use-sdk/browserbase";
-import { openai } from "@prince/computer-use-sdk/openai";
-import { anthropic } from "@prince/computer-use-sdk/anthropic";
-import { steel } from "@prince/computer-use-sdk/steel";
-import { hyperbrowser } from "@prince/computer-use-sdk/hyperbrowser";
-import { skyvern } from "@prince/computer-use-sdk/skyvern";
-import { stagehand } from "@prince/computer-use-sdk/stagehand";
-import { midscene } from "@prince/computer-use-sdk/midscene";
+import { browserbase } from "computer-use-sdk/browserbase";
+import { openai } from "computer-use-sdk/openai";
+import { anthropic } from "computer-use-sdk/anthropic";
+import { steel } from "computer-use-sdk/steel";
+import { hyperbrowser } from "computer-use-sdk/hyperbrowser";
+import { skyvern } from "computer-use-sdk/skyvern";
+import { stagehand } from "computer-use-sdk/stagehand";
+import { midscene } from "computer-use-sdk/midscene";
 // …same createSession({ provider }) for all
 ```
 
