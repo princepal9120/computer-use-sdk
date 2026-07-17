@@ -2,5 +2,6 @@
   "buildCommand": "cd apps/web && bun run build",
   "outputDirectory": "apps/web/out",
   "installCommand": "bun install",
-  "framework": null
+  "framework": null,
+  "cleanUrls": true
 }
