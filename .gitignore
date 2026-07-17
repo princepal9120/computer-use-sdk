@@ -1,0 +1,13 @@
+node_modules
+dist
+.turbo
+.next
+out
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+coverage
+compatibility/results
+*.tgz

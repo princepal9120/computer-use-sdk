@@ -1,0 +1,94 @@
+{
+  "name": "@opencoredev/computer-use-sdk",
+  "version": "0.1.0",
+  "description": "One TypeScript SDK for computer-use, browser automation, and web scraping providers.",
+  "homepage": "https://github.com/opencoredev/computer-use-sdk",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opencoredev/computer-use-sdk.git",
+    "directory": "packages/sdk"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./local": {
+      "types": "./dist/providers/local/index.d.mts",
+      "import": "./dist/providers/local/index.mjs"
+    },
+    "./browserbase": {
+      "types": "./dist/providers/browserbase/index.d.mts",
+      "import": "./dist/providers/browserbase/index.mjs"
+    },
+    "./browser-use": {
+      "types": "./dist/providers/browser-use/index.d.mts",
+      "import": "./dist/providers/browser-use/index.mjs"
+    },
+    "./cua": {
+      "types": "./dist/providers/cua/index.d.mts",
+      "import": "./dist/providers/cua/index.mjs"
+    },
+    "./firecrawl": {
+      "types": "./dist/providers/firecrawl/index.d.mts",
+      "import": "./dist/providers/firecrawl/index.mjs"
+    },
+    "./metadata": {
+      "types": "./dist/metadata.d.mts",
+      "import": "./dist/metadata.mjs"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.mts",
+      "import": "./dist/testing/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "prepack": "bun run build",
+    "dev": "tsdown --watch src",
+    "lint": "oxlint src tests",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test tests --timeout=15000"
+  },
+  "dependencies": {
+    "playwright": "^1.61.1"
+  },
+  "devDependencies": {
+    "@browserbasehq/sdk": "^2.16.0",
+    "@mendable/firecrawl-js": "^4.30.1",
+    "@trycua/computer": "^0.1.6",
+    "@types/bun": "^1.3.14",
+    "@types/node": "^22.13.14",
+    "browser-use-sdk": "^3.9.0",
+    "tsdown": "^0.16.6",
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "@browserbasehq/sdk": "^2.0.0",
+    "@mendable/firecrawl-js": "^4.0.0",
+    "@trycua/computer": "^0.1.0",
+    "browser-use-sdk": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@browserbasehq/sdk": { "optional": true },
+    "@mendable/firecrawl-js": { "optional": true },
+    "@trycua/computer": { "optional": true },
+    "browser-use-sdk": { "optional": true }
+  },
+  "engines": {
+    "node": ">=22 <26"
+  }
+}
